@@ -77,7 +77,7 @@ export const authService = {
   // Log user activity
   async logUserActivity(action = 'login') {
     try {
-      const user = await this.getCurrentUser();
+      const user = await authService.getCurrentUser();
       if (!user) return;
 
       if (action === 'login') {
@@ -107,6 +107,7 @@ export const authService = {
   // Get user activity data (for admin dashboard)
   async getUserActivity(timeframe = 'week') {
     try {
+      // Return empty array if table doesn't exist yet
       let query = supabase
         .from('user_activity_stats')
         .select('*')
@@ -126,7 +127,10 @@ export const authService = {
 
       const { data, error } = await query;
       
-      if (error) throw error;
+      if (error) {
+        console.error('Error fetching user activity:', error);
+        return [];
+      }
       return data || [];
     } catch (error) {
       console.error('Error fetching user activity:', error);
@@ -164,9 +168,9 @@ export const authService = {
           isAdmin: ADMIN_EMAILS.includes(session.user.email)
         };
         
-        // Log activity on sign in
+        // Log activity on sign in (removed the await that was causing issues)
         if (event === 'SIGNED_IN') {
-          await this.logUserActivity('login');
+          authService.logUserActivity('login');
         }
         
         callback(user);
