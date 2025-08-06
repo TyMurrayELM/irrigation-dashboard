@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, AlertCircle, CheckCircle, Settings, ChevronDown, ChevronUp, Droplets, TreePine, User } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, CheckCircle, Settings, ChevronDown, ChevronUp, Droplets, TreePine, User, StickyNote } from 'lucide-react';
 
 function PropertiesOverview({ properties, onSelectProperty }) {
   const [expandedProperties, setExpandedProperties] = useState(new Set());
@@ -86,11 +86,63 @@ function PropertiesOverview({ properties, onSelectProperty }) {
     return frequency?.replace(/-/g, ' ') || 'Not set';
   };
 
+  // Check if property has recent notes (within last 14 days)
+  const hasRecentNote = (property) => {
+    const twoWeeksAgo = new Date();
+    twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
+    
+    // Check if property has notes and was updated recently
+    if (property.notes && property.updated_at) {
+      const updatedDate = new Date(property.updated_at);
+      if (updatedDate >= twoWeeksAgo) {
+        return true;
+      }
+    }
+    
+    // Check zone history for recent notes
+    if (property.zones) {
+      for (const zone of property.zones) {
+        if (zone.history && zone.history.length > 0) {
+          for (const historyItem of zone.history) {
+            if (historyItem.note) {
+              // Parse the date string (format: "01/15/2025")
+              const [month, day, year] = historyItem.changed_at.split('/');
+              const historyDate = new Date(year, month - 1, day);
+              if (historyDate >= twoWeeksAgo) {
+                return true;
+              }
+            }
+          }
+        }
+      }
+    }
+    
+    return false;
+  };
+
+  // Sort properties: recent notes first, then by name
+  const sortedProperties = [...properties].sort((a, b) => {
+    const aHasRecentNote = hasRecentNote(a);
+    const bHasRecentNote = hasRecentNote(b);
+    
+    if (aHasRecentNote && !bHasRecentNote) return -1;
+    if (!aHasRecentNote && bHasRecentNote) return 1;
+    
+    // If both have or don't have recent notes, sort by name
+    return a.name.localeCompare(b.name);
+  });
+
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden h-[600px] flex flex-col">
       <div className="p-6 border-b border-gray-200">
         <h2 className="text-xl font-semibold text-gray-800">Properties Overview</h2>
-        <p className="text-sm text-gray-600 mt-1">Click property name to view details • Click arrow to expand zones</p>
+        <p className="text-sm text-gray-600 mt-1">
+          Click property name to view details • Click arrow to expand zones
+          <span className="ml-2">
+            <StickyNote className="w-3 h-3 text-yellow-600 inline mr-1" />
+            = Recent note (last 2 weeks)
+          </span>
+        </p>
       </div>
       
       <div className="flex-1 overflow-x-auto overflow-y-auto relative" style={{ maxHeight: 'calc(100% - 88px)' }}>
@@ -110,134 +162,154 @@ function PropertiesOverview({ properties, onSelectProperty }) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {properties.length === 0 ? (
+            {sortedProperties.length === 0 ? (
               <tr>
                 <td colSpan="10" className="px-4 py-8 text-center text-gray-500">
                   No properties found matching the selected filters
                 </td>
               </tr>
             ) : (
-              properties.map((property) => (
-                <React.Fragment key={property.id}>
-                  <tr className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900 min-w-[100px]">
-                      <button
-                        onClick={() => onSelectProperty(property)}
-                        className="text-blue-600 hover:text-blue-800 hover:underline text-left"
-                      >
-                        {property.name}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap w-20">
-                      {property.region}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 w-32">
-                      <span className={`${property.timer_type ? 'text-blue-600 font-medium' : 'text-gray-400'} truncate block`} title={property.timer_type}>
-                        {property.timer_type || 'Not set'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 text-center w-16">
-                      {property.zones?.length || 0}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 text-center font-medium w-20">
-                      {getTotalDuration(property.zones)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 min-w-[150px]">
-                      <span className="block">
-                        {getScheduleSummary(property.zones)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-center w-20">
-                      <div className="flex items-center justify-center gap-1">
-                        {getStatusIcon(property.days_since_irrigation_invoice)}
-                        <span className={getStatusColor(property.days_since_irrigation_invoice)}>
-                          {property.days_since_irrigation_invoice || 'N/A'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-center w-20">
-                      <div className="flex items-center justify-center gap-1">
-                        {getStatusIcon(property.days_since_irrigation_visit)}
-                        <span className={getStatusColor(property.days_since_irrigation_visit)}>
-                          {property.days_since_irrigation_visit || 'N/A'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 w-32">
-                      <div className="flex items-center gap-1 truncate">
-                        <User className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                        <span className="truncate">{getMostRecentAdjuster(property.zones)}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-center w-20">
-                      <div className="flex items-center justify-center gap-2">
-                        {property.zones && property.zones.length > 0 && (
+              sortedProperties.map((property) => {
+                const hasNote = hasRecentNote(property);
+                
+                return (
+                  <React.Fragment key={property.id}>
+                    <tr className={`hover:bg-gray-50 transition-colors ${hasNote ? 'bg-yellow-50' : ''}`}>
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900 min-w-[100px]">
+                        <div className="flex items-center gap-2">
+                          {hasNote && (
+                            <StickyNote 
+                              className="w-4 h-4 text-yellow-600 flex-shrink-0" 
+                              title="Has recent note (last 2 weeks)"
+                            />
+                          )}
                           <button
-                            onClick={() => toggleExpanded(property.id)}
-                            className="text-gray-600 hover:text-gray-800"
-                            title={expandedProperties.has(property.id) ? "Hide zones" : "Show zones"}
+                            onClick={() => onSelectProperty(property)}
+                            className="text-blue-600 hover:text-blue-800 hover:underline text-left"
                           >
-                            {expandedProperties.has(property.id) ? (
-                              <ChevronUp className="w-4 h-4" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4" />
-                            )}
+                            {property.name}
                           </button>
-                        )}
-                        <button
-                          onClick={() => onSelectProperty(property)}
-                          className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
-                        >
-                          <Settings className="w-4 h-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                  
-                  {/* Expanded zones section */}
-                  {expandedProperties.has(property.id) && property.zones && property.zones.length > 0 && (
-                    <tr>
-                      <td colSpan="10" className="px-4 py-3 bg-gray-50">
-                        <div className="ml-8">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-2">Zones:</h4>
-                          <div className="space-y-2">
-                            {property.zones.map((zone) => (
-                              <div key={zone.id} className="flex items-center gap-4 text-sm bg-white p-2 rounded border border-gray-200">
-                                <div className="flex items-center gap-2 flex-1">
-                                  {getZoneIcon(zone.type)}
-                                  <span className="font-medium">{zone.name}</span>
-                                  <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full capitalize">
-                                    {zone.type}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1 text-gray-600">
-                                  <Clock className="w-3 h-3" />
-                                  <span>{zone.duration} min</span>
-                                </div>
-                                <div className="flex items-center gap-1 text-gray-600">
-                                  <Calendar className="w-3 h-3" />
-                                  <span className="text-xs">{formatFrequency(zone.frequency, zone.days)}</span>
-                                </div>
-                                {zone.last_adjusted_by && (
-                                  <div className="flex items-center gap-1 text-gray-500 text-xs">
-                                    <User className="w-3 h-3" />
-                                    <span>{zone.last_adjusted_by}</span>
-                                    {zone.last_adjusted_at && (
-                                      <span className="text-gray-400">
-                                        ({new Date(zone.last_adjusted_at).toLocaleDateString()})
-                                      </span>
-                                    )}
-                                  </div>
-                                )}
-                              </div>
-                            ))}
-                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap w-20">
+                        {property.region}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 w-32">
+                        <span className={`${property.timer_type ? 'text-blue-600 font-medium' : 'text-gray-400'} truncate block`} title={property.timer_type}>
+                          {property.timer_type || 'Not set'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 text-center w-16">
+                        {property.zones?.length || 0}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 text-center font-medium w-20">
+                        {getTotalDuration(property.zones)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 min-w-[150px]">
+                        <span className="block">
+                          {getScheduleSummary(property.zones)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-center w-20">
+                        <div className="flex items-center justify-center gap-1">
+                          {getStatusIcon(property.days_since_irrigation_invoice)}
+                          <span className={getStatusColor(property.days_since_irrigation_invoice)}>
+                            {property.days_since_irrigation_invoice || 'N/A'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-center w-20">
+                        <div className="flex items-center justify-center gap-1">
+                          {getStatusIcon(property.days_since_irrigation_visit)}
+                          <span className={getStatusColor(property.days_since_irrigation_visit)}>
+                            {property.days_since_irrigation_visit || 'N/A'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 w-32">
+                        <div className="flex items-center gap-1 truncate">
+                          <User className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                          <span className="truncate">{getMostRecentAdjuster(property.zones)}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-center w-20">
+                        <div className="flex items-center justify-center gap-2">
+                          {property.zones && property.zones.length > 0 && (
+                            <button
+                              onClick={() => toggleExpanded(property.id)}
+                              className="text-gray-600 hover:text-gray-800"
+                              title={expandedProperties.has(property.id) ? "Hide zones" : "Show zones"}
+                            >
+                              {expandedProperties.has(property.id) ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => onSelectProperty(property)}
+                            className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                          >
+                            <Settings className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
-                  )}
-                </React.Fragment>
-              ))
+                    
+                    {/* Expanded zones section */}
+                    {expandedProperties.has(property.id) && property.zones && property.zones.length > 0 && (
+                      <tr>
+                        <td colSpan="10" className="px-4 py-3 bg-gray-50">
+                          <div className="ml-8">
+                            <h4 className="text-sm font-semibold text-gray-700 mb-2">Zones:</h4>
+                            <div className="space-y-2">
+                              {property.zones.map((zone) => (
+                                <div key={zone.id} className="flex items-center gap-4 text-sm bg-white p-2 rounded border border-gray-200">
+                                  <div className="flex items-center gap-2 flex-1">
+                                    {getZoneIcon(zone.type)}
+                                    <span className="font-medium">{zone.name}</span>
+                                    <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full capitalize">
+                                      {zone.type}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1 text-gray-600">
+                                    <Clock className="w-3 h-3" />
+                                    <span>{zone.duration} min</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 text-gray-600">
+                                    <Calendar className="w-3 h-3" />
+                                    <span className="text-xs">{formatFrequency(zone.frequency, zone.days)}</span>
+                                  </div>
+                                  {zone.last_adjusted_by && (
+                                    <div className="flex items-center gap-1 text-gray-500 text-xs">
+                                      <User className="w-3 h-3" />
+                                      <span>{zone.last_adjusted_by}</span>
+                                      {zone.last_adjusted_at && (
+                                        <span className="text-gray-400">
+                                          ({new Date(zone.last_adjusted_at).toLocaleDateString()})
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                  {zone.history && zone.history.length > 0 && zone.history[0].note && (
+                                    <div className="flex items-center gap-1">
+                                      <StickyNote className="w-3 h-3 text-yellow-600" />
+                                      <span className="text-xs text-gray-600 italic truncate max-w-[200px]" title={zone.history[0].note}>
+                                        {zone.history[0].note}
+                                      </span>
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                );
+              })
             )}
           </tbody>
         </table>

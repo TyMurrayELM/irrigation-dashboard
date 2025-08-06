@@ -10,7 +10,7 @@ function Header({ currentUser, onSignIn, onSignOut }) {
             Irrigation Control Dashboard
           </h1>
           <p className="text-gray-600">
-            Manage your landscaping irrigation schedules
+            Manage our landscaping irrigation schedules
           </p>
         </div>
         <div className="text-right">
