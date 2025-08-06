@@ -32,7 +32,7 @@ function App() {
     company: ''
   });
 
-  // Check for existing auth session on mount
+  // Chek for existing auth session on mount
   useEffect(() => {
     checkAuth();
     
