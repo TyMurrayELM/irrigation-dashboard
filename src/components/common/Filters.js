@@ -1,10 +1,6 @@
 import React from 'react';
 import { Filter } from 'lucide-react';
 
-// Define allowed values
-const ALLOWED_REGIONS = ['Phoenix', 'Las Vegas'];
-const ALLOWED_BRANCHES = ['Phoenix', 'Las Vegas'];
-
 function Filters({ properties, filters, onFilterChange }) {
   // Get unique values based on current filter state
   const getUniqueValues = (field) => {
@@ -49,14 +45,6 @@ function Filters({ properties, filters, onFilterChange }) {
     }
     
     const values = [...new Set(sourceData.map(p => p[field]).filter(Boolean))].sort();
-    
-    // Apply restrictions for regions and branches
-    if (field === 'region') {
-      return ALLOWED_REGIONS.filter(region => values.includes(region));
-    }
-    if (field === 'branch') {
-      return ALLOWED_BRANCHES.filter(branch => values.includes(branch));
-    }
     
     return values;
   };
