@@ -86,16 +86,23 @@ function PropertiesOverview({ properties, onSelectProperty }) {
     return frequency?.replace(/-/g, ' ') || 'Not set';
   };
 
-  // Check if property has recent notes (within last 14 days)
-  const hasRecentNote = (property) => {
+  // Get the most recent note from property or zones
+  const getMostRecentNote = (property) => {
     const twoWeeksAgo = new Date();
     twoWeeksAgo.setDate(twoWeeksAgo.getDate() - 14);
     
-    // Check if property has notes and was updated recently
+    let recentNotes = [];
+    
+    // Check property notes
     if (property.notes && property.updated_at) {
       const updatedDate = new Date(property.updated_at);
       if (updatedDate >= twoWeeksAgo) {
-        return true;
+        recentNotes.push({
+          note: property.notes,
+          date: updatedDate,
+          source: 'Property',
+          by: null
+        });
       }
     }
     
@@ -109,7 +116,12 @@ function PropertiesOverview({ properties, onSelectProperty }) {
               const [month, day, year] = historyItem.changed_at.split('/');
               const historyDate = new Date(year, month - 1, day);
               if (historyDate >= twoWeeksAgo) {
-                return true;
+                recentNotes.push({
+                  note: historyItem.note,
+                  date: historyDate,
+                  source: `Zone: ${zone.name}`,
+                  by: historyItem.changed_by
+                });
               }
             }
           }
@@ -117,7 +129,18 @@ function PropertiesOverview({ properties, onSelectProperty }) {
       }
     }
     
-    return false;
+    // Sort by date and return the most recent
+    if (recentNotes.length > 0) {
+      recentNotes.sort((a, b) => b.date - a.date);
+      return recentNotes[0];
+    }
+    
+    return null;
+  };
+
+  // Check if property has recent notes (within last 14 days)
+  const hasRecentNote = (property) => {
+    return getMostRecentNote(property) !== null;
   };
 
   // Sort properties: recent notes first, then by name
@@ -132,6 +155,25 @@ function PropertiesOverview({ properties, onSelectProperty }) {
     return a.name.localeCompare(b.name);
   });
 
+  // Format tooltip text for the note
+  const formatNoteTooltip = (noteData) => {
+    if (!noteData) return '';
+    
+    const dateStr = noteData.date.toLocaleDateString('en-US', { 
+      month: 'short', 
+      day: 'numeric', 
+      year: 'numeric' 
+    });
+    
+    let tooltip = `${noteData.source} - ${dateStr}`;
+    if (noteData.by) {
+      tooltip += ` by ${noteData.by}`;
+    }
+    tooltip += `\n\n${noteData.note}`;
+    
+    return tooltip;
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden h-[600px] flex flex-col">
       <div className="p-6 border-b border-gray-200">
@@ -140,7 +182,7 @@ function PropertiesOverview({ properties, onSelectProperty }) {
           Click property name to view details • Click arrow to expand zones
           <span className="ml-2">
             <StickyNote className="w-3 h-3 text-yellow-600 inline mr-1" />
-            = Recent note (last 2 weeks)
+            = Recent note (hover to view)
           </span>
         </p>
       </div>
@@ -170,7 +212,8 @@ function PropertiesOverview({ properties, onSelectProperty }) {
               </tr>
             ) : (
               sortedProperties.map((property) => {
-                const hasNote = hasRecentNote(property);
+                const recentNote = getMostRecentNote(property);
+                const hasNote = recentNote !== null;
                 
                 return (
                   <React.Fragment key={property.id}>
@@ -178,10 +221,30 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                       <td className="px-4 py-3 text-sm font-medium text-gray-900 min-w-[100px]">
                         <div className="flex items-center gap-2">
                           {hasNote && (
-                            <StickyNote 
-                              className="w-4 h-4 text-yellow-600 flex-shrink-0" 
-                              title="Has recent note (last 2 weeks)"
-                            />
+                            <div className="relative group">
+                              <StickyNote 
+                                className="w-4 h-4 text-yellow-600 flex-shrink-0 cursor-help" 
+                                title={formatNoteTooltip(recentNote)}
+                              />
+                              {/* Enhanced tooltip on hover */}
+                              <div className="absolute left-0 top-5 z-20 hidden group-hover:block">
+                                <div className="bg-gray-900 text-white text-xs rounded-lg p-3 max-w-xs shadow-lg">
+                                  <div className="font-semibold mb-1">
+                                    {recentNote.source} - {recentNote.date.toLocaleDateString('en-US', { 
+                                      month: 'short', 
+                                      day: 'numeric' 
+                                    })}
+                                    {recentNote.by && <span className="font-normal"> by {recentNote.by}</span>}
+                                  </div>
+                                  <div className="whitespace-pre-wrap break-words">
+                                    {recentNote.note.length > 200 
+                                      ? recentNote.note.substring(0, 200) + '...' 
+                                      : recentNote.note}
+                                  </div>
+                                  <div className="absolute -top-1 left-2 w-2 h-2 bg-gray-900 transform rotate-45"></div>
+                                </div>
+                              </div>
+                            </div>
                           )}
                           <button
                             onClick={() => onSelectProperty(property)}
