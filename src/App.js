@@ -6,10 +6,12 @@ import Filters from './components/common/Filters';
 import CSVUpload from './components/common/CSVUpload';
 import PropertySelector from './components/property/PropertySelector';
 import PropertyDetails from './components/property/PropertyDetails';
+import PropertiesOverview from './components/property/PropertiesOverview';
 import ZoneList from './components/zones/ZoneList';
 import NotesSection from './components/property/NotesSection';
 import { dataService } from './services/dataService';
 import { authService } from './services/authService';
+import { LayoutGrid, LayoutList } from 'lucide-react';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -21,6 +23,7 @@ function App() {
   const [addingZone, setAddingZone] = useState(false);
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(true);
+  const [viewMode, setViewMode] = useState('overview'); // 'overview' or 'detail'
   const [filters, setFilters] = useState({
     region: '',
     branch: '',
@@ -35,6 +38,7 @@ function App() {
     
     // Listen for auth changes
     const { data: authListener } = authService.onAuthStateChange((user) => {
+      console.log('Auth state changed:', user);
       setCurrentUser(user);
       setAuthLoading(false);
       // Load properties when user signs in
@@ -87,9 +91,16 @@ function App() {
   }, [filters, properties, selectedProperty]);
 
   const checkAuth = async () => {
-    const user = await authService.getCurrentUser();
-    setCurrentUser(user);
-    setAuthLoading(false);
+    try {
+      console.log('Checking authentication...');
+      const user = await authService.getCurrentUser();
+      console.log('Current user:', user);
+      setCurrentUser(user);
+      setAuthLoading(false);
+    } catch (error) {
+      console.error('Error checking auth:', error);
+      setAuthLoading(false);
+    }
   };
 
   const loadProperties = async () => {
@@ -157,6 +168,11 @@ function App() {
     }
   };
 
+  const handleSelectPropertyFromOverview = (property) => {
+    setSelectedProperty(property);
+    setViewMode('detail');
+  };
+
   // Show loading screen while checking authentication
   if (authLoading) {
     return (
@@ -189,47 +205,98 @@ function App() {
           onSignIn={handleSignIn}
           onSignOut={handleSignOut}
         />
+        
         <Filters 
           properties={properties}
           filters={filters}
           onFilterChange={setFilters}
         />
+        
         {/* Only show CSV Upload to admins */}
         {currentUser?.isAdmin && (
           <CSVUpload 
             onUploadComplete={loadProperties}
           />
         )}
-        <PropertySelector
-          properties={filteredProperties}
-          selectedProperty={selectedProperty}
-          onPropertySelect={setSelectedProperty}
-        />
-        {selectedProperty && (
+        
+        {/* View Mode Toggle */}
+        <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <span className="text-sm font-medium text-gray-700">View Mode:</span>
+              <div className="flex gap-2">
+                <button
+                  onClick={() => setViewMode('overview')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                    viewMode === 'overview'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <LayoutList className="w-4 h-4" />
+                  Overview
+                </button>
+                <button
+                  onClick={() => setViewMode('detail')}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                    viewMode === 'detail'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  Detail View
+                </button>
+              </div>
+            </div>
+            {viewMode === 'overview' && (
+              <div className="text-sm text-gray-600">
+                {filteredProperties.length} {filteredProperties.length === 1 ? 'property' : 'properties'} shown
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {/* Content based on view mode */}
+        {viewMode === 'overview' ? (
+          <PropertiesOverview
+            properties={filteredProperties}
+            onSelectProperty={handleSelectPropertyFromOverview}
+          />
+        ) : (
           <>
-            <PropertyDetails
-              property={selectedProperty}
-              onUpdate={handlePropertyUpdate}
-              currentUser={currentUser}
-              isEditing={editingProperty}
-              setIsEditing={setEditingProperty}
+            <PropertySelector
+              properties={filteredProperties}
+              selectedProperty={selectedProperty}
+              onPropertySelect={setSelectedProperty}
             />
-            <ZoneList
-              property={selectedProperty}
-              onZoneUpdate={handleZoneUpdate}
-              onAddZone={handleAddZone}
-              onDeleteZone={handleDeleteZone}
-              currentUser={currentUser}
-              editingZone={editingZone}
-              setEditingZone={setEditingZone}
-              addingZone={addingZone}
-              setAddingZone={setAddingZone}
-            />
-            <NotesSection
-              notes={selectedProperty.notes}
-              onUpdate={(notes) => handleNotesUpdate(selectedProperty.id, notes)}
-              currentUser={currentUser}
-            />
+            {selectedProperty && (
+              <>
+                <PropertyDetails
+                  property={selectedProperty}
+                  onUpdate={handlePropertyUpdate}
+                  currentUser={currentUser}
+                  isEditing={editingProperty}
+                  setIsEditing={setEditingProperty}
+                />
+                <ZoneList
+                  property={selectedProperty}
+                  onZoneUpdate={handleZoneUpdate}
+                  onAddZone={handleAddZone}
+                  onDeleteZone={handleDeleteZone}
+                  currentUser={currentUser}
+                  editingZone={editingZone}
+                  setEditingZone={setEditingZone}
+                  addingZone={addingZone}
+                  setAddingZone={setAddingZone}
+                />
+                <NotesSection
+                  notes={selectedProperty.notes}
+                  onUpdate={(notes) => handleNotesUpdate(selectedProperty.id, notes)}
+                  currentUser={currentUser}
+                />
+              </>
+            )}
           </>
         )}
       </div>
