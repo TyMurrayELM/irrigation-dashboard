@@ -87,160 +87,163 @@ function PropertiesOverview({ properties, onSelectProperty }) {
   };
 
   return (
-    <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-      <div className="p-6 border-b border-gray-200">
+    <div className="bg-white rounded-xl shadow-lg overflow-hidden flex flex-col h-full">
+      <div className="p-6 border-b border-gray-200 flex-shrink-0">
         <h2 className="text-xl font-semibold text-gray-800">Properties Overview</h2>
         <p className="text-sm text-gray-600 mt-1">Click property name to view details • Click arrow to expand zones</p>
       </div>
       
-      <div className="overflow-x-auto">
-        <table className="w-full table-auto">
-          <thead className="bg-gray-50 border-b border-gray-200">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">Property</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Region</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Timer</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Zones</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Total Min</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">Schedule</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Days Since<br/>Invoice</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Days Since<br/>Visit</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Last Adjuster</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Actions</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {properties.length === 0 ? (
+      <div className="flex-1 overflow-auto relative">
+        <div className="min-w-full">
+          <table className="w-full table-auto">
+            <thead className="bg-gray-50 border-b border-gray-200 sticky top-0 z-10">
               <tr>
-                <td colSpan="10" className="px-4 py-8 text-center text-gray-500">
-                  No properties found matching the selected filters
-                </td>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px] bg-gray-50">Property</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50">Region</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 bg-gray-50">Timer</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16 bg-gray-50">Zones</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50">Total Min</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px] bg-gray-50">Schedule</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50">Days Since<br/>Invoice</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50">Days Since<br/>Visit</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 bg-gray-50">Last Adjuster</th>
+                <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50">Actions</th>
               </tr>
-            ) : (
-              properties.map((property) => (
-                <React.Fragment key={property.id}>
-                  <tr className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900 min-w-[100px]">
-                      <button
-                        onClick={() => onSelectProperty(property)}
-                        className="text-blue-600 hover:text-blue-800 hover:underline text-left"
-                      >
-                        {property.name}
-                      </button>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap w-20">
-                      {property.region}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 w-32">
-                      <span className={`${property.timer_type ? 'text-blue-600 font-medium' : 'text-gray-400'} truncate block`} title={property.timer_type}>
-                        {property.timer_type || 'Not set'}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 text-center w-16">
-                      {property.zones?.length || 0}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 text-center font-medium w-20">
-                      {getTotalDuration(property.zones)}
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 min-w-[150px]">
-                      <span className="block">
-                        {getScheduleSummary(property.zones)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-center w-20">
-                      <div className="flex items-center justify-center gap-1">
-                        {getStatusIcon(property.days_since_irrigation_invoice)}
-                        <span className={getStatusColor(property.days_since_irrigation_invoice)}>
-                          {property.days_since_irrigation_invoice || 'N/A'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-center w-20">
-                      <div className="flex items-center justify-center gap-1">
-                        {getStatusIcon(property.days_since_irrigation_visit)}
-                        <span className={getStatusColor(property.days_since_irrigation_visit)}>
-                          {property.days_since_irrigation_visit || 'N/A'}
-                        </span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 w-32">
-                      <div className="flex items-center gap-1 truncate">
-                        <User className="w-3 h-3 text-gray-400 flex-shrink-0" />
-                        <span className="truncate">{getMostRecentAdjuster(property.zones)}</span>
-                      </div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-center w-20">
-                      <div className="flex items-center justify-center gap-2">
-                        {property.zones && property.zones.length > 0 && (
-                          <button
-                            onClick={() => toggleExpanded(property.id)}
-                            className="text-gray-600 hover:text-gray-800"
-                            title={expandedProperties.has(property.id) ? "Hide zones" : "Show zones"}
-                          >
-                            {expandedProperties.has(property.id) ? (
-                              <ChevronUp className="w-4 h-4" />
-                            ) : (
-                              <ChevronDown className="w-4 h-4" />
-                            )}
-                          </button>
-                        )}
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {properties.length === 0 ? (
+                <tr>
+                  <td colSpan="10" className="px-4 py-8 text-center text-gray-500">
+                    No properties found matching the selected filters
+                  </td>
+                </tr>
+              ) : (
+                properties.map((property) => (
+                  <React.Fragment key={property.id}>
+                    <tr className="hover:bg-gray-50 transition-colors">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900 min-w-[100px]">
                         <button
                           onClick={() => onSelectProperty(property)}
-                          className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                          className="text-blue-600 hover:text-blue-800 hover:underline text-left"
                         >
-                          <Settings className="w-4 h-4" />
+                          {property.name}
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                  
-                  {/* Expanded zones section */}
-                  {expandedProperties.has(property.id) && property.zones && property.zones.length > 0 && (
-                    <tr>
-                      <td colSpan="10" className="px-4 py-3 bg-gray-50">
-                        <div className="ml-8">
-                          <h4 className="text-sm font-semibold text-gray-700 mb-2">Zones:</h4>
-                          <div className="space-y-2">
-                            {property.zones.map((zone) => (
-                              <div key={zone.id} className="flex items-center gap-4 text-sm bg-white p-2 rounded border border-gray-200">
-                                <div className="flex items-center gap-2 flex-1">
-                                  {getZoneIcon(zone.type)}
-                                  <span className="font-medium">{zone.name}</span>
-                                  <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full capitalize">
-                                    {zone.type}
-                                  </span>
-                                </div>
-                                <div className="flex items-center gap-1 text-gray-600">
-                                  <Clock className="w-3 h-3" />
-                                  <span>{zone.duration} min</span>
-                                </div>
-                                <div className="flex items-center gap-1 text-gray-600">
-                                  <Calendar className="w-3 h-3" />
-                                  <span className="capitalize">{formatFrequency(zone.frequency, zone.days)}</span>
-                                </div>
-                                <div className="flex items-center gap-1 text-gray-500 text-xs">
-                                  <User className="w-3 h-3" />
-                                  <span>{zone.last_adjusted_by} • {zone.last_adjusted_at}</span>
-                                </div>
-                              </div>
-                            ))}
-                          </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap w-20">
+                        {property.region}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 w-32">
+                        <span className={`${property.timer_type ? 'text-blue-600 font-medium' : 'text-gray-400'} truncate block`} title={property.timer_type}>
+                          {property.timer_type || 'Not set'}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 text-center w-16">
+                        {property.zones?.length || 0}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 text-center font-medium w-20">
+                        {getTotalDuration(property.zones)}
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 min-w-[150px]">
+                        <span className="block">
+                          {getScheduleSummary(property.zones)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-center w-20">
+                        <div className="flex items-center justify-center gap-1">
+                          {getStatusIcon(property.days_since_irrigation_invoice)}
+                          <span className={getStatusColor(property.days_since_irrigation_invoice)}>
+                            {property.days_since_irrigation_invoice || 'N/A'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-center w-20">
+                        <div className="flex items-center justify-center gap-1">
+                          {getStatusIcon(property.days_since_irrigation_visit)}
+                          <span className={getStatusColor(property.days_since_irrigation_visit)}>
+                            {property.days_since_irrigation_visit || 'N/A'}
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-600 w-32">
+                        <div className="flex items-center gap-1 truncate">
+                          <User className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                          <span className="truncate">{getMostRecentAdjuster(property.zones)}</span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-center w-20">
+                        <div className="flex items-center justify-center gap-2">
+                          {property.zones && property.zones.length > 0 && (
+                            <button
+                              onClick={() => toggleExpanded(property.id)}
+                              className="text-gray-600 hover:text-gray-800"
+                              title={expandedProperties.has(property.id) ? "Hide zones" : "Show zones"}
+                            >
+                              {expandedProperties.has(property.id) ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
+                          <button
+                            onClick={() => onSelectProperty(property)}
+                            className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                          >
+                            <Settings className="w-4 h-4" />
+                          </button>
                         </div>
                       </td>
                     </tr>
-                  )}
-                </React.Fragment>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-      
-      {properties.length > 0 && (
-        <div className="px-6 py-3 bg-gray-50 border-t border-gray-200 text-sm text-gray-600">
-          Showing {properties.length} {properties.length === 1 ? 'property' : 'properties'}
+                    
+                    {/* Expanded zones section */}
+                    {expandedProperties.has(property.id) && property.zones && property.zones.length > 0 && (
+                      <tr>
+                        <td colSpan="10" className="px-4 py-3 bg-gray-50">
+                          <div className="ml-8">
+                            <h4 className="text-sm font-semibold text-gray-700 mb-2">Zones:</h4>
+                            <div className="space-y-2">
+                              {property.zones.map((zone) => (
+                                <div key={zone.id} className="flex items-center gap-4 text-sm bg-white p-2 rounded border border-gray-200">
+                                  <div className="flex items-center gap-2 flex-1">
+                                    {getZoneIcon(zone.type)}
+                                    <span className="font-medium">{zone.name}</span>
+                                    <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full capitalize">
+                                      {zone.type}
+                                    </span>
+                                  </div>
+                                  <div className="flex items-center gap-1 text-gray-600">
+                                    <Clock className="w-3 h-3" />
+                                    <span>{zone.duration} min</span>
+                                  </div>
+                                  <div className="flex items-center gap-1 text-gray-600">
+                                    <Calendar className="w-3 h-3" />
+                                    <span className="text-xs">{formatFrequency(zone.frequency, zone.days)}</span>
+                                  </div>
+                                  {zone.last_adjusted_by && (
+                                    <div className="flex items-center gap-1 text-gray-500 text-xs">
+                                      <User className="w-3 h-3" />
+                                      <span>{zone.last_adjusted_by}</span>
+                                      {zone.last_adjusted_at && (
+                                        <span className="text-gray-400">
+                                          ({new Date(zone.last_adjusted_at).toLocaleDateString()})
+                                        </span>
+                                      )}
+                                    </div>
+                                  )}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </React.Fragment>
+                ))
+              )}
+            </tbody>
+          </table>
         </div>
-      )}
+      </div>
     </div>
   );
 }
