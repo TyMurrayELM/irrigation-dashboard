@@ -2,7 +2,7 @@ import { supabase } from '../utils/supabase';
 
 // Define admin emails - add your email here!
 const ADMIN_EMAILS = [
-  'tyler.murray@encorelm.com', // Replace with your actual email
+  'your-email@company.com', // Replace with your actual email
   // Add other admin emails as needed
 ];
 
@@ -10,10 +10,15 @@ export const authService = {
   // Sign in with Google
   async signInWithGoogle() {
     try {
+      // Use the production URL when deployed, localhost when developing
+      const redirectUrl = window.location.hostname === 'localhost' 
+        ? 'http://localhost:3000'
+        : 'https://irrigation-dashboard-six.vercel.app';
+
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin, // Redirects back to your app
+          redirectTo: redirectUrl,
           queryParams: {
             access_type: 'offline',
             prompt: 'consent',
