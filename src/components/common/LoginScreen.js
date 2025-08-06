@@ -8,10 +8,12 @@ function LoginScreen({ onSignIn }) {
         <div className="bg-white rounded-2xl shadow-xl p-8">
           {/* Logo and Title */}
           <div className="text-center mb-8">
-            <div className="flex justify-center mb-4">
-              <div className="p-4 bg-blue-100 rounded-full">
-                <Droplets className="w-12 h-12 text-blue-600" />
-              </div>
+            <div className="flex justify-center mb-6">
+              <img 
+                src="/encore.png" 
+                alt="Encore Logo" 
+                className="h-20 w-auto"
+              />
             </div>
             <h1 className="text-3xl font-bold text-gray-800 mb-2">
               Irrigation Control Dashboard
