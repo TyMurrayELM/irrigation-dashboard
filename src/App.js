@@ -8,6 +8,7 @@ import PropertyDetails from './components/property/PropertyDetails';
 import ZoneList from './components/zones/ZoneList';
 import NotesSection from './components/property/NotesSection';
 import { dataService } from './services/dataService';
+import { authService } from './services/authService';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -18,6 +19,7 @@ function App() {
   const [editingZone, setEditingZone] = useState(null);
   const [addingZone, setAddingZone] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [authLoading, setAuthLoading] = useState(true);
   const [filters, setFilters] = useState({
     region: '',
     branch: '',
@@ -25,6 +27,21 @@ function App() {
     property_type: '',
     company: ''
   });
+
+  // Check for existing auth session on mount
+  useEffect(() => {
+    checkAuth();
+    
+    // Listen for auth changes
+    const { data: authListener } = authService.onAuthStateChange((user) => {
+      setCurrentUser(user);
+      setAuthLoading(false);
+    });
+
+    return () => {
+      authListener?.subscription?.unsubscribe();
+    };
+  }, []);
 
   // Load properties from Supabase on component mount
   useEffect(() => {
@@ -62,6 +79,12 @@ function App() {
     }
   }, [filters, properties, selectedProperty]);
 
+  const checkAuth = async () => {
+    const user = await authService.getCurrentUser();
+    setCurrentUser(user);
+    setAuthLoading(false);
+  };
+
   const loadProperties = async () => {
     setLoading(true);
     const data = await dataService.getProperties();
@@ -70,22 +93,23 @@ function App() {
     setLoading(false);
   };
 
-  const handleSignIn = () => {
-    setCurrentUser({
-      email: 'user@example.com',
-      name: 'John Doe',
-      picture: null
-    });
+  const handleSignIn = async () => {
+    const result = await authService.signInWithGoogle();
+    if (!result.success) {
+      alert('Error signing in. Please try again.');
+    }
   };
 
-  const handleSignOut = () => {
-    setCurrentUser(null);
+  const handleSignOut = async () => {
+    const result = await authService.signOut();
+    if (result.success) {
+      setCurrentUser(null);
+    }
   };
 
   const handleZoneUpdate = async (propertyId, zoneId, updates, changeNote) => {
     const result = await dataService.updateZone(zoneId, updates, changeNote, currentUser);
     if (result) {
-      // Reload properties to get updated data
       await loadProperties();
       setEditingZone(null);
     }
@@ -123,10 +147,10 @@ function App() {
     }
   };
 
-  if (loading) {
+  if (loading || authLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-6 flex items-center justify-center">
-        <div className="text-xl text-gray-600">Loading properties...</div>
+        <div className="text-xl text-gray-600">Loading...</div>
       </div>
     );
   }
@@ -144,9 +168,12 @@ function App() {
           filters={filters}
           onFilterChange={setFilters}
         />
-        <CSVUpload 
-          onUploadComplete={loadProperties}
-        />
+        {/* Only show CSV Upload to admins */}
+        {currentUser?.isAdmin && (
+          <CSVUpload 
+            onUploadComplete={loadProperties}
+          />
+        )}
         <PropertySelector
           properties={filteredProperties}
           selectedProperty={selectedProperty}

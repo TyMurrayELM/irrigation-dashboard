@@ -1,5 +1,5 @@
 import React from 'react';
-import { AlertCircle } from 'lucide-react';
+import { AlertCircle, Shield } from 'lucide-react';
 
 function Header({ currentUser, onSignIn, onSignOut }) {
   return (
@@ -17,9 +17,24 @@ function Header({ currentUser, onSignIn, onSignOut }) {
           {currentUser ? (
             <div className="flex items-center gap-3">
               <div className="text-sm text-right">
-                <p className="font-medium text-gray-800">{currentUser.name}</p>
+                <div className="flex items-center gap-2 justify-end">
+                  <p className="font-medium text-gray-800">{currentUser.name}</p>
+                  {currentUser.isAdmin && (
+                    <span className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
+                      <Shield className="w-3 h-3" />
+                      Admin
+                    </span>
+                  )}
+                </div>
                 <p className="text-gray-500">{currentUser.email}</p>
               </div>
+              {currentUser.picture && (
+                <img 
+                  src={currentUser.picture} 
+                  alt={currentUser.name}
+                  className="w-10 h-10 rounded-full border-2 border-gray-200"
+                />
+              )}
               <button
                 onClick={onSignOut}
                 className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
