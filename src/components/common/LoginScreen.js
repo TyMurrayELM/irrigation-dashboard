@@ -1,240 +1,75 @@
-import React, { useState, useEffect } from 'react';
-import './App.css';
-import LoginScreen from './components/common/LoginScreen';
-import Header from './components/common/Header';
-import Filters from './components/common/Filters';
-import CSVUpload from './components/common/CSVUpload';
-import PropertySelector from './components/property/PropertySelector';
-import PropertyDetails from './components/property/PropertyDetails';
-import ZoneList from './components/zones/ZoneList';
-import NotesSection from './components/property/NotesSection';
-import { dataService } from './services/dataService';
-import { authService } from './services/authService';
+import React from 'react';
+import { Droplets, Shield, Lock } from 'lucide-react';
 
-function App() {
-  const [currentUser, setCurrentUser] = useState(null);
-  const [properties, setProperties] = useState([]);
-  const [filteredProperties, setFilteredProperties] = useState([]);
-  const [selectedProperty, setSelectedProperty] = useState(null);
-  const [editingProperty, setEditingProperty] = useState(false);
-  const [editingZone, setEditingZone] = useState(null);
-  const [addingZone, setAddingZone] = useState(false);
-  const [loading, setLoading] = useState(true);
-  const [authLoading, setAuthLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    region: '',
-    branch: '',
-    account_manager: '',
-    property_type: '',
-    company: ''
-  });
-
-  // Check for existing auth session on mount
-  useEffect(() => {
-    checkAuth();
-    
-    // Listen for auth changes
-    const { data: authListener } = authService.onAuthStateChange((user) => {
-      setCurrentUser(user);
-      setAuthLoading(false);
-      // Load properties when user signs in
-      if (user) {
-        loadProperties();
-      }
-    });
-
-    return () => {
-      authListener?.subscription?.unsubscribe();
-    };
-  }, []);
-
-  // Load properties only when authenticated
-  useEffect(() => {
-    if (currentUser) {
-      loadProperties();
-    }
-  }, [currentUser]);
-
-  // Apply filters whenever properties or filters change
-  useEffect(() => {
-    let filtered = [...properties];
-    
-    if (filters.region) {
-      filtered = filtered.filter(p => p.region === filters.region);
-    }
-    if (filters.branch) {
-      filtered = filtered.filter(p => p.branch === filters.branch);
-    }
-    if (filters.account_manager) {
-      filtered = filtered.filter(p => p.account_manager === filters.account_manager);
-    }
-    if (filters.property_type) {
-      filtered = filtered.filter(p => p.property_type === filters.property_type);
-    }
-    if (filters.company) {
-      filtered = filtered.filter(p => p.company === filters.company);
-    }
-    
-    setFilteredProperties(filtered);
-    
-    // Update selected property if it exists in filtered list
-    if (selectedProperty) {
-      const updatedSelected = filtered.find(p => p.id === selectedProperty.id);
-      if (updatedSelected) {
-        setSelectedProperty(updatedSelected);
-      }
-    }
-  }, [filters, properties, selectedProperty]);
-
-  const checkAuth = async () => {
-    const user = await authService.getCurrentUser();
-    setCurrentUser(user);
-    setAuthLoading(false);
-  };
-
-  const loadProperties = async () => {
-    setLoading(true);
-    const data = await dataService.getProperties();
-    setProperties(data);
-    setFilteredProperties(data);
-    setLoading(false);
-  };
-
-  const handleSignIn = async () => {
-    const result = await authService.signInWithGoogle();
-    if (!result.success) {
-      alert('Error signing in. Please try again.');
-    }
-  };
-
-  const handleSignOut = async () => {
-    const result = await authService.signOut();
-    if (result.success) {
-      setCurrentUser(null);
-      setProperties([]);
-      setFilteredProperties([]);
-      setSelectedProperty(null);
-    }
-  };
-
-  const handleZoneUpdate = async (propertyId, zoneId, updates, changeNote) => {
-    const result = await dataService.updateZone(zoneId, updates, changeNote, currentUser);
-    if (result) {
-      await loadProperties();
-      setEditingZone(null);
-    }
-  };
-
-  const handleDeleteZone = async (propertyId, zoneId) => {
-    if (window.confirm('Are you sure you want to delete this zone?')) {
-      const result = await dataService.deleteZone(zoneId);
-      if (result) {
-        await loadProperties();
-      }
-    }
-  };
-
-  const handleAddZone = async (propertyId, newZone) => {
-    const result = await dataService.addZone(propertyId, newZone, currentUser);
-    if (result) {
-      await loadProperties();
-      setAddingZone(false);
-    }
-  };
-
-  const handleNotesUpdate = async (propertyId, notes) => {
-    const result = await dataService.updateNotes(propertyId, notes);
-    if (result) {
-      await loadProperties();
-    }
-  };
-
-  const handlePropertyUpdate = async (propertyId, updates) => {
-    const result = await dataService.updateProperty(propertyId, updates);
-    if (result) {
-      await loadProperties();
-      setEditingProperty(false);
-    }
-  };
-
-  // Show loading screen while checking authentication
-  if (authLoading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-6 flex items-center justify-center">
-        <div className="text-xl text-gray-600">Loading...</div>
-      </div>
-    );
-  }
-
-  // Show login screen if not authenticated
-  if (!currentUser) {
-    return <LoginScreen onSignIn={handleSignIn} />;
-  }
-
-  // Show loading while fetching properties
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-6 flex items-center justify-center">
-        <div className="text-xl text-gray-600">Loading properties...</div>
-      </div>
-    );
-  }
-
-  // Main dashboard (only shown when authenticated)
+function LoginScreen({ onSignIn }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-6">
-      <div className="max-w-7xl mx-auto">
-        <Header 
-          currentUser={currentUser}
-          onSignIn={handleSignIn}
-          onSignOut={handleSignOut}
-        />
-        <Filters 
-          properties={properties}
-          filters={filters}
-          onFilterChange={setFilters}
-        />
-        {/* Only show CSV Upload to admins */}
-        {currentUser?.isAdmin && (
-          <CSVUpload 
-            onUploadComplete={loadProperties}
-          />
-        )}
-        <PropertySelector
-          properties={filteredProperties}
-          selectedProperty={selectedProperty}
-          onPropertySelect={setSelectedProperty}
-        />
-        {selectedProperty && (
-          <>
-            <PropertyDetails
-              property={selectedProperty}
-              onUpdate={handlePropertyUpdate}
-              currentUser={currentUser}
-              isEditing={editingProperty}
-              setIsEditing={setEditingProperty}
-            />
-            <ZoneList
-              property={selectedProperty}
-              onZoneUpdate={handleZoneUpdate}
-              onAddZone={handleAddZone}
-              onDeleteZone={handleDeleteZone}
-              currentUser={currentUser}
-              editingZone={editingZone}
-              setEditingZone={setEditingZone}
-              addingZone={addingZone}
-              setAddingZone={setAddingZone}
-            />
-            <NotesSection
-              notes={selectedProperty.notes}
-              onUpdate={(notes) => handleNotesUpdate(selectedProperty.id, notes)}
-              currentUser={currentUser}
-            />
-          </>
-        )}
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center p-6">
+      <div className="max-w-md w-full">
+        <div className="bg-white rounded-2xl shadow-xl p-8">
+          {/* Logo and Title */}
+          <div className="text-center mb-8">
+            <div className="flex justify-center mb-4">
+              <div className="p-4 bg-blue-100 rounded-full">
+                <Droplets className="w-12 h-12 text-blue-600" />
+              </div>
+            </div>
+            <h1 className="text-3xl font-bold text-gray-800 mb-2">
+              Irrigation Control Dashboard
+            </h1>
+            <p className="text-gray-600">
+              Manage your landscaping irrigation schedules
+            </p>
+          </div>
+
+          {/* Security Badge */}
+          <div className="flex items-center justify-center gap-2 mb-6 text-sm text-gray-500">
+            <Lock className="w-4 h-4" />
+            <span>Secure access for authorized users only</span>
+          </div>
+
+          {/* Sign In Button */}
+          <button
+            onClick={onSignIn}
+            className="w-full flex items-center justify-center gap-3 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all shadow-sm text-lg font-medium"
+          >
+            <GoogleIcon />
+            Sign in with Google
+          </button>
+
+          {/* Company Info */}
+          <div className="mt-8 pt-6 border-t border-gray-200 text-center text-sm text-gray-500">
+            <p>For internal use only</p>
+            <p className="mt-1">Contact your administrator for access</p>
+          </div>
+        </div>
+
+        {/* Features List */}
+        <div className="mt-8 text-center text-sm text-gray-600">
+          <div className="flex items-center justify-center gap-6">
+            <div className="flex items-center gap-2">
+              <Shield className="w-4 h-4 text-green-600" />
+              <span>Secure Login</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Droplets className="w-4 h-4 text-blue-600" />
+              <span>Zone Management</span>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-export default App;
+function GoogleIcon() {
+  return (
+    <svg className="w-6 h-6" viewBox="0 0 24 24">
+      <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+      <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+      <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+      <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+    </svg>
+  );
+}
+
+export default LoginScreen;
