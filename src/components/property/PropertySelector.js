@@ -18,7 +18,7 @@ function PropertySelector({ properties, selectedProperty, onPropertySelect }) {
           <option value="">Choose a property...</option>
           {properties.map(property => (
             <option key={property.id} value={property.id}>
-              {property.name} - {property.address} ({property.zones.length} zones)
+              {property.name}
             </option>
           ))}
         </select>
