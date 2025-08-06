@@ -1,7 +1,9 @@
-import React from 'react';
-import { Calendar, Clock, AlertCircle, CheckCircle, Settings } from 'lucide-react';
+import React, { useState } from 'react';
+import { Calendar, Clock, AlertCircle, CheckCircle, Settings, ChevronDown, ChevronUp, Droplets, TreePine, User } from 'lucide-react';
 
 function PropertiesOverview({ properties, onSelectProperty }) {
+  const [expandedProperties, setExpandedProperties] = useState(new Set());
+
   const getStatusIcon = (days) => {
     if (days === null || days === undefined) return <AlertCircle className="w-4 h-4 text-gray-400" />;
     if (days <= 7) return <CheckCircle className="w-4 h-4 text-green-600" />;
@@ -36,11 +38,59 @@ function PropertiesOverview({ properties, onSelectProperty }) {
     return uniqueSchedules.join(' | ');
   };
 
+  const getMostRecentAdjuster = (zones) => {
+    if (!zones || zones.length === 0) return 'N/A';
+    
+    // Get all zones with dates
+    const zonesWithDates = zones
+      .filter(zone => zone.last_adjusted_at)
+      .map(zone => ({
+        adjuster: zone.last_adjusted_by || 'Unknown',
+        date: new Date(zone.last_adjusted_at)
+      }));
+    
+    if (zonesWithDates.length === 0) return 'N/A';
+    
+    // Sort by date and get the most recent
+    zonesWithDates.sort((a, b) => b.date - a.date);
+    return zonesWithDates[0].adjuster;
+  };
+
+  const toggleExpanded = (propertyId) => {
+    const newExpanded = new Set(expandedProperties);
+    if (newExpanded.has(propertyId)) {
+      newExpanded.delete(propertyId);
+    } else {
+      newExpanded.add(propertyId);
+    }
+    setExpandedProperties(newExpanded);
+  };
+
+  const getZoneIcon = (type) => {
+    switch(type) {
+      case 'turf':
+        return <Droplets className="w-4 h-4 text-green-500" />;
+      case 'shrubs':
+        return <TreePine className="w-4 h-4 text-emerald-600" />;
+      case 'trees':
+        return <TreePine className="w-4 h-4 text-green-700" />;
+      default:
+        return <Droplets className="w-4 h-4 text-gray-400" />;
+    }
+  };
+
+  const formatFrequency = (frequency, days) => {
+    if (frequency === 'custom-days' && days && days.length > 0) {
+      return days.join(', ');
+    }
+    return frequency?.replace(/-/g, ' ') || 'Not set';
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
       <div className="p-6 border-b border-gray-200">
         <h2 className="text-xl font-semibold text-gray-800">Properties Overview</h2>
-        <p className="text-sm text-gray-600 mt-1">All properties and their current irrigation settings</p>
+        <p className="text-sm text-gray-600 mt-1">Click property name to view details • Click arrow to expand zones</p>
       </div>
       
       <div className="overflow-x-auto">
@@ -49,14 +99,14 @@ function PropertiesOverview({ properties, onSelectProperty }) {
             <tr>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Manager</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timer</th>
               <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Zones</th>
               <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Min</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Schedule</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Invoice</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Visit</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Days Since<br/>Invoice</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Days Since<br/>Visit</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Adjuster</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -68,58 +118,118 @@ function PropertiesOverview({ properties, onSelectProperty }) {
               </tr>
             ) : (
               properties.map((property) => (
-                <tr key={property.id} className="hover:bg-gray-50 transition-colors">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">
-                    {property.name}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-                    {property.region}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-                    {property.account_manager}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-                    <span className={property.timer_type ? 'text-blue-600 font-medium' : 'text-gray-400'}>
-                      {property.timer_type || 'Not set'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 text-center">
-                    {property.zones?.length || 0}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600 text-center font-medium">
-                    {getTotalDuration(property.zones)}
-                  </td>
-                  <td className="px-4 py-3 text-sm text-gray-600">
-                    <span className="truncate block max-w-xs" title={getScheduleSummary(property.zones)}>
-                      {getScheduleSummary(property.zones)}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      {getStatusIcon(property.days_since_irrigation_invoice)}
-                      <span className={getStatusColor(property.days_since_irrigation_invoice)}>
-                        {property.days_since_irrigation_invoice || 'N/A'}
+                <React.Fragment key={property.id}>
+                  <tr className="hover:bg-gray-50 transition-colors">
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">
+                      <button
+                        onClick={() => onSelectProperty(property)}
+                        className="text-blue-600 hover:text-blue-800 hover:underline text-left"
+                      >
+                        {property.name}
+                      </button>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                      {property.region}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                      <span className={property.timer_type ? 'text-blue-600 font-medium' : 'text-gray-400'}>
+                        {property.timer_type || 'Not set'}
                       </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-center">
-                    <div className="flex items-center justify-center gap-1">
-                      {getStatusIcon(property.days_since_irrigation_visit)}
-                      <span className={getStatusColor(property.days_since_irrigation_visit)}>
-                        {property.days_since_irrigation_visit || 'N/A'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 text-center">
+                      {property.zones?.length || 0}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 text-center font-medium">
+                      {getTotalDuration(property.zones)}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600">
+                      <span className="truncate block max-w-xs" title={getScheduleSummary(property.zones)}>
+                        {getScheduleSummary(property.zones)}
                       </span>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3 text-sm text-center">
-                    <button
-                      onClick={() => onSelectProperty(property)}
-                      className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 mx-auto"
-                    >
-                      <Settings className="w-4 h-4" />
-                      <span>Manage</span>
-                    </button>
-                  </td>
-                </tr>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        {getStatusIcon(property.days_since_irrigation_invoice)}
+                        <span className={getStatusColor(property.days_since_irrigation_invoice)}>
+                          {property.days_since_irrigation_invoice || 'N/A'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center">
+                      <div className="flex items-center justify-center gap-1">
+                        {getStatusIcon(property.days_since_irrigation_visit)}
+                        <span className={getStatusColor(property.days_since_irrigation_visit)}>
+                          {property.days_since_irrigation_visit || 'N/A'}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                      <div className="flex items-center gap-1">
+                        <User className="w-3 h-3 text-gray-400" />
+                        {getMostRecentAdjuster(property.zones)}
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-sm text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        {property.zones && property.zones.length > 0 && (
+                          <button
+                            onClick={() => toggleExpanded(property.id)}
+                            className="text-gray-600 hover:text-gray-800"
+                            title={expandedProperties.has(property.id) ? "Hide zones" : "Show zones"}
+                          >
+                            {expandedProperties.has(property.id) ? (
+                              <ChevronUp className="w-4 h-4" />
+                            ) : (
+                              <ChevronDown className="w-4 h-4" />
+                            )}
+                          </button>
+                        )}
+                        <button
+                          onClick={() => onSelectProperty(property)}
+                          className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
+                        >
+                          <Settings className="w-4 h-4" />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                  
+                  {/* Expanded zones section */}
+                  {expandedProperties.has(property.id) && property.zones && property.zones.length > 0 && (
+                    <tr>
+                      <td colSpan="10" className="px-4 py-3 bg-gray-50">
+                        <div className="ml-8">
+                          <h4 className="text-sm font-semibold text-gray-700 mb-2">Zones:</h4>
+                          <div className="space-y-2">
+                            {property.zones.map((zone) => (
+                              <div key={zone.id} className="flex items-center gap-4 text-sm bg-white p-2 rounded border border-gray-200">
+                                <div className="flex items-center gap-2 flex-1">
+                                  {getZoneIcon(zone.type)}
+                                  <span className="font-medium">{zone.name}</span>
+                                  <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full capitalize">
+                                    {zone.type}
+                                  </span>
+                                </div>
+                                <div className="flex items-center gap-1 text-gray-600">
+                                  <Clock className="w-3 h-3" />
+                                  <span>{zone.duration} min</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-gray-600">
+                                  <Calendar className="w-3 h-3" />
+                                  <span className="capitalize">{formatFrequency(zone.frequency, zone.days)}</span>
+                                </div>
+                                <div className="flex items-center gap-1 text-gray-500 text-xs">
+                                  <User className="w-3 h-3" />
+                                  <span>{zone.last_adjusted_by} • {zone.last_adjusted_at}</span>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                </React.Fragment>
               ))
             )}
           </tbody>
