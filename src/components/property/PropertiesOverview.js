@@ -97,12 +97,12 @@ function PropertiesOverview({ properties, onSelectProperty }) {
         <table className="w-full table-auto">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Property</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px]">Property</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Region</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Timer</th>
               <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Zones</th>
               <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Total Min</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">Schedule</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px]">Schedule</th>
               <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Days Since<br/>Invoice</th>
               <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Days Since<br/>Visit</th>
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Last Adjuster</th>
@@ -120,11 +120,10 @@ function PropertiesOverview({ properties, onSelectProperty }) {
               properties.map((property) => (
                 <React.Fragment key={property.id}>
                   <tr className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900 w-32">
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900 min-w-[100px]">
                       <button
                         onClick={() => onSelectProperty(property)}
-                        className="text-blue-600 hover:text-blue-800 hover:underline text-left truncate block w-full"
-                        title={property.name}
+                        className="text-blue-600 hover:text-blue-800 hover:underline text-left"
                       >
                         {property.name}
                       </button>
@@ -143,8 +142,8 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                     <td className="px-4 py-3 text-sm text-gray-600 text-center font-medium w-20">
                       {getTotalDuration(property.zones)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 min-w-[200px]">
-                      <span className="block" title={getScheduleSummary(property.zones)}>
+                    <td className="px-4 py-3 text-sm text-gray-600 min-w-[150px]">
+                      <span className="block">
                         {getScheduleSummary(property.zones)}
                       </span>
                     </td>
