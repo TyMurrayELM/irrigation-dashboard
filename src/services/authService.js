@@ -2,7 +2,7 @@ import { supabase } from '../utils/supabase';
 
 // Define admin emails - add your email here!
 const ADMIN_EMAILS = [
-  'your-email@company.com', // Replace with your actual email
+  'tyler.murray@encorelm.com', // Replace with your actual email
   // Add other admin emails as needed
 ];
 
