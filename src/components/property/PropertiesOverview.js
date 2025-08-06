@@ -94,19 +94,19 @@ function PropertiesOverview({ properties, onSelectProperty }) {
       </div>
       
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className="w-full table-auto">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Property</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Region</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Timer</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Zones</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Total Min</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Schedule</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Days Since<br/>Invoice</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Days Since<br/>Visit</th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Last Adjuster</th>
-              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Property</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Region</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Timer</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16">Zones</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Total Min</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[200px]">Schedule</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Days Since<br/>Invoice</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Days Since<br/>Visit</th>
+              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32">Last Adjuster</th>
+              <th className="px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
@@ -120,34 +120,35 @@ function PropertiesOverview({ properties, onSelectProperty }) {
               properties.map((property) => (
                 <React.Fragment key={property.id}>
                   <tr className="hover:bg-gray-50 transition-colors">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900 whitespace-nowrap">
+                    <td className="px-4 py-3 text-sm font-medium text-gray-900 w-32">
                       <button
                         onClick={() => onSelectProperty(property)}
-                        className="text-blue-600 hover:text-blue-800 hover:underline text-left"
+                        className="text-blue-600 hover:text-blue-800 hover:underline text-left truncate block w-full"
+                        title={property.name}
                       >
                         {property.name}
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap w-20">
                       {property.region}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-                      <span className={property.timer_type ? 'text-blue-600 font-medium' : 'text-gray-400'}>
+                    <td className="px-4 py-3 text-sm text-gray-600 w-32">
+                      <span className={`${property.timer_type ? 'text-blue-600 font-medium' : 'text-gray-400'} truncate block`} title={property.timer_type}>
                         {property.timer_type || 'Not set'}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 text-center">
+                    <td className="px-4 py-3 text-sm text-gray-600 text-center w-16">
                       {property.zones?.length || 0}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 text-center font-medium">
+                    <td className="px-4 py-3 text-sm text-gray-600 text-center font-medium w-20">
                       {getTotalDuration(property.zones)}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      <span className="truncate block max-w-xs" title={getScheduleSummary(property.zones)}>
+                    <td className="px-4 py-3 text-sm text-gray-600 min-w-[200px]">
+                      <span className="block" title={getScheduleSummary(property.zones)}>
                         {getScheduleSummary(property.zones)}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-center">
+                    <td className="px-4 py-3 text-sm text-center w-20">
                       <div className="flex items-center justify-center gap-1">
                         {getStatusIcon(property.days_since_irrigation_invoice)}
                         <span className={getStatusColor(property.days_since_irrigation_invoice)}>
@@ -155,7 +156,7 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-center">
+                    <td className="px-4 py-3 text-sm text-center w-20">
                       <div className="flex items-center justify-center gap-1">
                         {getStatusIcon(property.days_since_irrigation_visit)}
                         <span className={getStatusColor(property.days_since_irrigation_visit)}>
@@ -163,13 +164,13 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                         </span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
-                      <div className="flex items-center gap-1">
-                        <User className="w-3 h-3 text-gray-400" />
-                        {getMostRecentAdjuster(property.zones)}
+                    <td className="px-4 py-3 text-sm text-gray-600 w-32">
+                      <div className="flex items-center gap-1 truncate">
+                        <User className="w-3 h-3 text-gray-400 flex-shrink-0" />
+                        <span className="truncate">{getMostRecentAdjuster(property.zones)}</span>
                       </div>
                     </td>
-                    <td className="px-4 py-3 text-sm text-center">
+                    <td className="px-4 py-3 text-sm text-center w-20">
                       <div className="flex items-center justify-center gap-2">
                         {property.zones && property.zones.length > 0 && (
                           <button
