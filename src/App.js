@@ -9,9 +9,10 @@ import PropertyDetails from './components/property/PropertyDetails';
 import PropertiesOverview from './components/property/PropertiesOverview';
 import ZoneList from './components/zones/ZoneList';
 import NotesSection from './components/property/NotesSection';
+import AdminDashboard from './components/admin/AdminDashboard';
 import { dataService } from './services/dataService';
 import { authService } from './services/authService';
-import { LayoutGrid, LayoutList } from 'lucide-react';
+import { LayoutGrid, LayoutList, Users } from 'lucide-react';
 
 function App() {
   const [currentUser, setCurrentUser] = useState(null);
@@ -24,6 +25,7 @@ function App() {
   const [loading, setLoading] = useState(true);
   const [authLoading, setAuthLoading] = useState(true);
   const [viewMode, setViewMode] = useState('overview'); // 'overview' or 'detail'
+  const [showUserActivity, setShowUserActivity] = useState(false); // Admin dashboard toggle
   const [filters, setFilters] = useState({
     region: '',
     branch: '',
@@ -32,7 +34,7 @@ function App() {
     company: ''
   });
 
-  // Chek for existing auth session on mount
+  // Check for existing auth session on mount
   useEffect(() => {
     checkAuth();
     
@@ -44,6 +46,8 @@ function App() {
       // Load properties when user signs in
       if (user) {
         loadProperties();
+        // Log user activity
+        logUserActivity(user);
       }
     });
 
@@ -103,6 +107,15 @@ function App() {
     }
   };
 
+  const logUserActivity = async (user) => {
+    // Log user activity for admin dashboard
+    try {
+      await authService.logUserActivity('login');
+    } catch (error) {
+      console.error('Error logging user activity:', error);
+    }
+  };
+
   const loadProperties = async () => {
     setLoading(true);
     const data = await dataService.getProperties();
@@ -119,12 +132,16 @@ function App() {
   };
 
   const handleSignOut = async () => {
+    // Log the sign out
+    await authService.logUserActivity('logout');
+    
     const result = await authService.signOut();
     if (result.success) {
       setCurrentUser(null);
       setProperties([]);
       setFilteredProperties([]);
       setSelectedProperty(null);
+      setShowUserActivity(false); // Reset admin view
     }
   };
 
@@ -206,95 +223,122 @@ function App() {
           onSignOut={handleSignOut}
         />
         
-        <Filters 
-          properties={properties}
-          filters={filters}
-          onFilterChange={setFilters}
-        />
-        
-        {/* Only show CSV Upload to admins */}
+        {/* Admin User Activity Button - Simple and non-intrusive */}
         {currentUser?.isAdmin && (
-          <CSVUpload 
-            onUploadComplete={loadProperties}
-          />
+          <div className="mb-4 flex justify-end">
+            <button
+              onClick={() => setShowUserActivity(!showUserActivity)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                showUserActivity 
+                  ? 'bg-purple-600 text-white' 
+                  : 'bg-white text-gray-700 hover:bg-gray-50 shadow-md'
+              }`}
+            >
+              <Users className="w-4 h-4" />
+              {showUserActivity ? 'Hide User Activity' : 'View User Activity'}
+            </button>
+          </div>
         )}
         
-        {/* View Mode Toggle */}
-        <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <span className="text-sm font-medium text-gray-700">View Mode:</span>
-              <div className="flex gap-2">
-                <button
-                  onClick={() => setViewMode('overview')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                    viewMode === 'overview'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  <LayoutList className="w-4 h-4" />
-                  Overview
-                </button>
-                <button
-                  onClick={() => setViewMode('detail')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
-                    viewMode === 'detail'
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                  }`}
-                >
-                  <LayoutGrid className="w-4 h-4" />
-                  Detail View
-                </button>
+        {/* Admin Dashboard - Shows when toggled */}
+        {showUserActivity && currentUser?.isAdmin && (
+          <AdminDashboard currentUser={currentUser} />
+        )}
+        
+        {/* Regular Dashboard Content - Always shows unless admin dashboard is open */}
+        {!showUserActivity && (
+          <>
+            <Filters 
+              properties={properties}
+              filters={filters}
+              onFilterChange={setFilters}
+            />
+            
+            {/* Only show CSV Upload to admins */}
+            {currentUser?.isAdmin && (
+              <CSVUpload 
+                onUploadComplete={loadProperties}
+              />
+            )}
+            
+            {/* View Mode Toggle */}
+            <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <span className="text-sm font-medium text-gray-700">View Mode:</span>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => setViewMode('overview')}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                        viewMode === 'overview'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <LayoutList className="w-4 h-4" />
+                      Overview
+                    </button>
+                    <button
+                      onClick={() => setViewMode('detail')}
+                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                        viewMode === 'detail'
+                          ? 'bg-blue-600 text-white'
+                          : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                      }`}
+                    >
+                      <LayoutGrid className="w-4 h-4" />
+                      Detail View
+                    </button>
+                  </div>
+                </div>
+                {viewMode === 'overview' && (
+                  <div className="text-sm text-gray-600">
+                    {filteredProperties.length} {filteredProperties.length === 1 ? 'property' : 'properties'} shown
+                  </div>
+                )}
               </div>
             </div>
-            {viewMode === 'overview' && (
-              <div className="text-sm text-gray-600">
-                {filteredProperties.length} {filteredProperties.length === 1 ? 'property' : 'properties'} shown
-              </div>
-            )}
-          </div>
-        </div>
-        
-        {/* Content based on view mode */}
-        {viewMode === 'overview' ? (
-          <PropertiesOverview
-            properties={filteredProperties}
-            onSelectProperty={handleSelectPropertyFromOverview}
-          />
-        ) : (
-          <>
-            <PropertySelector
-              properties={filteredProperties}
-              selectedProperty={selectedProperty}
-              onPropertySelect={setSelectedProperty}
-            />
-            {selectedProperty && (
+            
+            {/* Content based on view mode */}
+            {viewMode === 'overview' ? (
+              <PropertiesOverview
+                properties={filteredProperties}
+                onSelectProperty={handleSelectPropertyFromOverview}
+              />
+            ) : (
               <>
-                <PropertyDetails
-                  property={selectedProperty}
-                  onUpdate={handlePropertyUpdate}
-                  currentUser={currentUser}
-                  isEditing={editingProperty}
-                  setIsEditing={setEditingProperty}
+                <PropertySelector
+                  properties={filteredProperties}
+                  selectedProperty={selectedProperty}
+                  onPropertySelect={setSelectedProperty}
                 />
-                <ZoneList
-                  property={selectedProperty}
-                  onZoneUpdate={handleZoneUpdate}
-                  onAddZone={handleAddZone}
-                  onDeleteZone={handleDeleteZone}
-                  currentUser={currentUser}
-                  editingZone={editingZone}
-                  setEditingZone={setEditingZone}
-                  addingZone={addingZone}
-                  setAddingZone={setAddingZone}
-                />
-                <NotesSection
-                  notes={selectedProperty.notes}
-                  onUpdate={(notes) => handleNotesUpdate(selectedProperty.id, notes)}
-                  currentUser={currentUser}
-                />
+                {selectedProperty && (
+                  <>
+                    <PropertyDetails
+                      property={selectedProperty}
+                      onUpdate={handlePropertyUpdate}
+                      currentUser={currentUser}
+                      isEditing={editingProperty}
+                      setIsEditing={setEditingProperty}
+                    />
+                    <ZoneList
+                      property={selectedProperty}
+                      onZoneUpdate={handleZoneUpdate}
+                      onAddZone={handleAddZone}
+                      onDeleteZone={handleDeleteZone}
+                      currentUser={currentUser}
+                      editingZone={editingZone}
+                      setEditingZone={setEditingZone}
+                      addingZone={addingZone}
+                      setAddingZone={setAddingZone}
+                    />
+                    <NotesSection
+                      notes={selectedProperty.notes}
+                      onUpdate={(notes) => handleNotesUpdate(selectedProperty.id, notes)}
+                      currentUser={currentUser}
+                    />
+                  </>
+                )}
               </>
             )}
           </>
