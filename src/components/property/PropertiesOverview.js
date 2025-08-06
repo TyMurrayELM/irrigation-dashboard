@@ -228,7 +228,7 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                               />
                               {/* Enhanced tooltip on hover */}
                               <div className="absolute left-0 top-5 z-20 hidden group-hover:block">
-                                <div className="bg-gray-900 text-white text-xs rounded-lg p-3 max-w-xs shadow-lg">
+                                <div className="bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg" style={{ width: '400px', maxWidth: '400px' }}>
                                   <div className="font-semibold mb-1">
                                     {recentNote.source} - {recentNote.date.toLocaleDateString('en-US', { 
                                       month: 'short', 
@@ -237,8 +237,8 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                                     {recentNote.by && <span className="font-normal"> by {recentNote.by}</span>}
                                   </div>
                                   <div className="whitespace-pre-wrap break-words">
-                                    {recentNote.note.length > 200 
-                                      ? recentNote.note.substring(0, 200) + '...' 
+                                    {recentNote.note.length > 300 
+                                      ? recentNote.note.substring(0, 300) + '...' 
                                       : recentNote.note}
                                   </div>
                                   <div className="absolute -top-1 left-2 w-2 h-2 bg-gray-900 transform rotate-45"></div>
