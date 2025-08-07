@@ -4,20 +4,20 @@ import { AlertCircle, Shield } from 'lucide-react';
 function Header({ currentUser, onSignIn, onSignOut }) {
   return (
     <header className="mb-8">
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-bold text-gray-800 mb-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-2">
             Irrigation Control Dashboard
           </h1>
-          <p className="text-gray-600">
+          <p className="text-sm sm:text-base text-gray-600">
             Manage our landscaping irrigation schedules
           </p>
         </div>
-        <div className="text-right">
+        <div className="sm:text-right">
           {currentUser ? (
-            <div className="flex items-center gap-3">
-              <div className="text-sm text-right">
-                <div className="flex items-center gap-2 justify-end">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+              <div className="text-sm sm:text-right">
+                <div className="flex items-center gap-2 sm:justify-end">
                   <p className="font-medium text-gray-800">{currentUser.name}</p>
                   {currentUser.isAdmin && (
                     <span className="flex items-center gap-1 px-2 py-0.5 bg-purple-100 text-purple-700 rounded-full text-xs font-medium">
@@ -26,7 +26,7 @@ function Header({ currentUser, onSignIn, onSignOut }) {
                     </span>
                   )}
                 </div>
-                <p className="text-gray-500">{currentUser.email}</p>
+                <p className="text-gray-500 text-xs sm:text-sm">{currentUser.email}</p>
               </div>
               {currentUser.picture && (
                 <img 
@@ -37,7 +37,7 @@ function Header({ currentUser, onSignIn, onSignOut }) {
               )}
               <button
                 onClick={onSignOut}
-                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+                className="px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors min-h-[40px]"
               >
                 Sign Out
               </button>
@@ -45,7 +45,7 @@ function Header({ currentUser, onSignIn, onSignOut }) {
           ) : (
             <button
               onClick={onSignIn}
-              className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors shadow-sm"
+              className="flex items-center justify-center gap-2 px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors shadow-sm min-h-[44px] w-full sm:w-auto"
             >
               <GoogleIcon />
               Sign in with Google
@@ -55,10 +55,10 @@ function Header({ currentUser, onSignIn, onSignOut }) {
       </div>
       
       {!currentUser && (
-        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mt-4">
+        <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-3 sm:p-4 mt-4">
           <div className="flex items-center gap-2 text-yellow-800">
-            <AlertCircle className="w-5 h-5" />
-            <p className="text-sm">
+            <AlertCircle className="w-5 h-5 flex-shrink-0" />
+            <p className="text-xs sm:text-sm">
               Please sign in with Google to track changes and updates to irrigation schedules.
             </p>
           </div>
