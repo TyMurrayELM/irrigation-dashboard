@@ -95,19 +95,63 @@ function AdminDashboard({ currentUser }) {
     );
   }
 
+  // Mobile Card Component for User Activity
+  const UserActivityCard = ({ user }) => {
+    const activityStatus = getActivityStatus(user.last_login);
+    
+    return (
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+        <div className="flex justify-between items-start mb-3">
+          <div>
+            <div className="text-sm font-semibold text-gray-900">{user.name}</div>
+            <div className="text-xs text-gray-500">{user.email}</div>
+          </div>
+          <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${activityStatus.color}`}>
+            {activityStatus.status}
+          </span>
+        </div>
+        
+        <div className="grid grid-cols-2 gap-3 text-sm">
+          <div>
+            <p className="text-gray-500 text-xs">Login Count</p>
+            <p className="font-semibold text-gray-900">{user.login_count}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Last Login</p>
+            <p className="text-gray-900">{getTimeSinceLogin(user.last_login)}</p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Avg Session</p>
+            <p className="text-gray-900">{user.average_session_time} min</p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs">Total Time</p>
+            <p className="text-gray-900">
+              {Math.floor(user.total_session_time / 60)}h {user.total_session_time % 60}m
+            </p>
+          </div>
+        </div>
+        
+        <div className="mt-3 pt-3 border-t border-gray-100 text-xs text-gray-500">
+          First login: {formatDate(user.first_login)}
+        </div>
+      </div>
+    );
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden">
-      <div className="p-6 border-b border-gray-200">
-        <div className="flex justify-between items-center">
+      <div className="p-4 sm:p-6 border-b border-gray-200">
+        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4">
           <div className="flex items-center gap-3">
-            <Shield className="w-6 h-6 text-purple-600" />
-            <h2 className="text-xl font-semibold text-gray-800">Admin Dashboard - User Activity</h2>
+            <Shield className="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" />
+            <h2 className="text-lg sm:text-xl font-semibold text-gray-800">Admin Dashboard - User Activity</h2>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2 sm:gap-3">
             <select
               value={selectedTimeframe}
               onChange={(e) => setSelectedTimeframe(e.target.value)}
-              className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400"
+              className="flex-1 sm:flex-initial px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-400 min-h-[40px]"
             >
               <option value="day">Last 24 Hours</option>
               <option value="week">Last 7 Days</option>
@@ -116,17 +160,17 @@ function AdminDashboard({ currentUser }) {
             </select>
             <button
               onClick={loadUserActivity}
-              className="flex items-center gap-2 px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors"
+              className="flex items-center justify-center gap-2 px-4 py-2 text-sm bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors min-h-[40px]"
             >
               <RefreshCw className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} />
-              Refresh
+              <span className="hidden sm:inline">Refresh</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* Statistics Cards */}
-      <div className="grid grid-cols-4 gap-4 p-6 bg-gray-50 border-b border-gray-200">
+      {/* Statistics Cards - Responsive Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 p-4 sm:p-6 bg-gray-50 border-b border-gray-200">
         <div className="bg-white p-4 rounded-lg shadow-sm">
           <div className="flex items-center gap-3">
             <Users className="w-8 h-8 text-blue-600" />
@@ -165,8 +209,28 @@ function AdminDashboard({ currentUser }) {
         </div>
       </div>
 
-      {/* User Activity Table */}
-      <div className="overflow-x-auto">
+      {/* Mobile View - Cards */}
+      <div className="lg:hidden p-4">
+        {loading ? (
+          <div className="flex items-center justify-center gap-2 py-8 text-gray-500">
+            <RefreshCw className="w-5 h-5 animate-spin" />
+            Loading user activity...
+          </div>
+        ) : userActivity.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No user activity found
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {userActivity.map((user) => (
+              <UserActivityCard key={user.id} user={user} />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Desktop View - Table */}
+      <div className="hidden lg:block overflow-x-auto">
         <table className="w-full">
           <thead className="bg-gray-50 border-b border-gray-200">
             <tr>
