@@ -15,15 +15,15 @@ function ZoneList({
   setAddingZone
 }) {
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-      <div className="flex justify-between items-center mb-6">
-        <h3 className="text-xl font-semibold flex items-center gap-2">
+    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
+        <h3 className="text-lg sm:text-xl font-semibold flex items-center gap-2">
           <Droplets className="w-5 h-5 text-blue-600" />
           Irrigation Zones
         </h3>
         <button
           onClick={() => currentUser ? setAddingZone(true) : alert('Please sign in to add zones')}
-          className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors min-h-[44px] w-full sm:w-auto"
         >
           <Plus className="w-4 h-4" />
           Add Zone
