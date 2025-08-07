@@ -1,12 +1,13 @@
 import React from 'react';
-import { AlertCircle, Shield } from 'lucide-react';
+import { AlertCircle, Shield, Droplets } from 'lucide-react';
 
 function Header({ currentUser, onSignIn, onSignOut }) {
   return (
     <header className="mb-8">
       <div className="flex flex-col sm:flex-row sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-2">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-2 flex items-center gap-3">
+            <Droplets className="w-6 h-6 sm:w-8 sm:h-8 lg:w-10 lg:h-10 text-blue-600" />
             Irrigation Control Dashboard
           </h1>
           <p className="text-sm sm:text-base text-gray-600">
