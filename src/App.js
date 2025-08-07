@@ -248,7 +248,7 @@ function App() {
   // Show loading screen while checking authentication
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 sm:p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-blue-50 p-4 sm:p-6 flex items-center justify-center">
         <div className="text-xl text-gray-600">Loading...</div>
       </div>
     );
@@ -262,7 +262,7 @@ function App() {
   // Show loading while fetching properties
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 sm:p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-blue-50 p-4 sm:p-6 flex items-center justify-center">
         <div className="text-xl text-gray-600">Loading properties...</div>
       </div>
     );
@@ -270,7 +270,7 @@ function App() {
 
   // Main dashboard (only shown when authenticated)
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 sm:p-6">
+    <div className="min-h-screen bg-blue-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         <Header 
           currentUser={currentUser}
