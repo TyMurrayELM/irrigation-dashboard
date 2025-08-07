@@ -93,8 +93,21 @@ function PropertiesOverview({ properties, onSelectProperty }) {
     
     let recentNotes = [];
     
-    // Check property notes
-    if (property.notes && property.updated_at) {
+    // Check property notes (now an array)
+    if (property.notes && Array.isArray(property.notes)) {
+      property.notes.forEach(note => {
+        const noteDate = new Date(note.timestamp);
+        if (noteDate >= twoWeeksAgo) {
+          recentNotes.push({
+            note: note.text,
+            date: noteDate,
+            source: 'Property',
+            by: note.user
+          });
+        }
+      });
+    } else if (property.notes && typeof property.notes === 'string') {
+      // Fallback for old string format
       const updatedDate = new Date(property.updated_at);
       if (updatedDate >= twoWeeksAgo) {
         recentNotes.push({
@@ -208,6 +221,7 @@ function PropertiesOverview({ properties, onSelectProperty }) {
               <div className="flex-1 text-xs">
                 <p className="font-medium text-gray-700">
                   {recentNote.source} - {recentNote.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                  {recentNote.by && <span> by {recentNote.by}</span>}
                 </p>
                 <p className="text-gray-600 mt-1 line-clamp-2">{recentNote.note}</p>
               </div>
