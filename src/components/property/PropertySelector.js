@@ -3,17 +3,21 @@ import { Home } from 'lucide-react';
 
 function PropertySelector({ properties, selectedProperty, onPropertySelect }) {
   return (
-    <div className="bg-white rounded-xl shadow-lg p-6 mb-6">
-      <div className="flex items-center gap-4">
-        <Home className="w-5 h-5 text-blue-600" />
-        <label className="text-lg font-semibold text-gray-800">Select Property:</label>
+    <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6">
+      <div className="flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <Home className="w-5 h-5 text-blue-600" />
+          <label className="text-base sm:text-lg font-semibold text-gray-800 whitespace-nowrap">
+            Select Property:
+          </label>
+        </div>
         <select
           value={selectedProperty?.id || ''}
           onChange={(e) => {
             const property = properties.find(p => p.id === parseInt(e.target.value));
             onPropertySelect(property);
           }}
-          className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400"
+          className="flex-1 px-4 py-2 min-h-[44px] border-2 border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-blue-400 text-base"
         >
           <option value="">Choose a property...</option>
           {properties.map(property => (
