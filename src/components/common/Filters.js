@@ -49,6 +49,38 @@ function Filters({ properties, filters, onFilterChange }) {
     return values;
   };
 
+  // Get unique adjusters from all zones
+  const getUniqueAdjusters = () => {
+    const adjusters = new Set();
+    let hasUnassigned = false;
+    
+    properties.forEach(property => {
+      if (property.zones && property.zones.length > 0) {
+        let propertyHasAdjuster = false;
+        property.zones.forEach(zone => {
+          if (zone.last_adjusted_by && zone.last_adjusted_by !== 'N/A') {
+            adjusters.add(zone.last_adjusted_by);
+            propertyHasAdjuster = true;
+          }
+        });
+        if (!propertyHasAdjuster) {
+          hasUnassigned = true;
+        }
+      } else {
+        hasUnassigned = true;
+      }
+    });
+    
+    const sortedAdjusters = Array.from(adjusters).sort();
+    
+    // Add "Unassigned" option at the beginning if there are properties without adjusters
+    if (hasUnassigned) {
+      sortedAdjusters.unshift('unassigned');
+    }
+    
+    return sortedAdjusters;
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg p-4 mb-4">
       <div className="flex items-center gap-2 mb-3">
@@ -56,8 +88,8 @@ function Filters({ properties, filters, onFilterChange }) {
         <h3 className="font-semibold text-gray-800">Filters</h3>
         <span className="hidden sm:inline text-xs text-gray-500 ml-2">(Options update based on selections)</span>
       </div>
-      {/* Responsive grid: 1 col mobile, 2 cols tablet, 5 cols desktop */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
+      {/* Responsive grid: 1 col mobile, 2 cols tablet, 3 cols desktop for 6 filters */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         <FilterSelect
           label="Region"
           value={filters.region}
@@ -93,12 +125,20 @@ function Filters({ properties, filters, onFilterChange }) {
           options={getUniqueValues('company')}
           placeholder="All Companies"
         />
+        <FilterSelect
+          label="Last Adjuster"
+          value={filters.last_adjuster}
+          onChange={(value) => onFilterChange({ ...filters, last_adjuster: value })}
+          options={getUniqueAdjusters()}
+          placeholder="All Adjusters"
+          formatOption={(option) => option === 'unassigned' ? 'Unassigned / N/A' : option}
+        />
       </div>
     </div>
   );
 }
 
-function FilterSelect({ label, value, onChange, options, placeholder }) {
+function FilterSelect({ label, value, onChange, options, placeholder, formatOption }) {
   return (
     <div className="w-full">
       <label className="text-xs text-gray-600 block mb-1">{label}</label>
@@ -109,7 +149,9 @@ function FilterSelect({ label, value, onChange, options, placeholder }) {
       >
         <option value="">{placeholder}</option>
         {options.map(option => (
-          <option key={option} value={option}>{option}</option>
+          <option key={option} value={option}>
+            {formatOption ? formatOption(option) : option}
+          </option>
         ))}
       </select>
     </div>

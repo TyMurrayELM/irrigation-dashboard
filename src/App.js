@@ -31,7 +31,8 @@ function App() {
     branch: '',
     account_manager: '',
     property_type: '',
-    company: ''
+    company: '',
+    last_adjuster: '' // New filter
   });
 
   // Check for existing auth session on mount
@@ -82,6 +83,22 @@ function App() {
     }
     if (filters.company) {
       filtered = filtered.filter(p => p.company === filters.company);
+    }
+    
+    // New filter for Last Adjuster
+    if (filters.last_adjuster) {
+      if (filters.last_adjuster === 'unassigned') {
+        // Filter for properties with no last adjuster
+        filtered = filtered.filter(p => {
+          const hasAdjuster = p.zones && p.zones.some(z => z.last_adjusted_by && z.last_adjusted_by !== 'N/A');
+          return !hasAdjuster;
+        });
+      } else {
+        // Filter for specific adjuster
+        filtered = filtered.filter(p => 
+          p.zones && p.zones.some(z => z.last_adjusted_by === filters.last_adjuster)
+        );
+      }
     }
     
     setFilteredProperties(filtered);
@@ -286,21 +303,8 @@ function App() {
         {/* Regular Dashboard Content - Always shows unless admin dashboard is open */}
         {!showUserActivity && (
           <>
-            <Filters 
-              properties={properties}
-              filters={filters}
-              onFilterChange={setFilters}
-            />
-            
-            {/* Only show CSV Upload to admins */}
-            {currentUser?.isAdmin && (
-              <CSVUpload 
-                onUploadComplete={loadProperties}
-              />
-            )}
-            
-            {/* View Mode Toggle */}
-            <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
+            {/* View Mode Toggle - Moved above filters */}
+            <div className="bg-white rounded-xl shadow-lg p-4 mb-4">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                   <span className="text-sm font-medium text-gray-700">View Mode:</span>
@@ -336,6 +340,19 @@ function App() {
                 )}
               </div>
             </div>
+            
+            <Filters 
+              properties={properties}
+              filters={filters}
+              onFilterChange={setFilters}
+            />
+            
+            {/* Only show CSV Upload to admins */}
+            {currentUser?.isAdmin && (
+              <CSVUpload 
+                onUploadComplete={loadProperties}
+              />
+            )}
             
             {/* Content based on view mode */}
             {viewMode === 'overview' ? (
