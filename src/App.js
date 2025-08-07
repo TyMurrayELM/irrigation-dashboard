@@ -121,8 +121,30 @@ function App() {
   const loadProperties = async () => {
     setLoading(true);
     const data = await dataService.getProperties();
-    setProperties(data);
-    setFilteredProperties(data);
+    
+    // Convert old notes format to new array format if needed
+    const convertedData = data.map(property => {
+      // If notes is a string, convert to array format
+      if (typeof property.notes === 'string' && property.notes) {
+        return {
+          ...property,
+          notes: [{
+            text: property.notes,
+            user: 'System',
+            timestamp: property.updated_at || new Date().toISOString(),
+            userId: 'system'
+          }]
+        };
+      }
+      // If notes is already an array or empty, keep as is
+      return {
+        ...property,
+        notes: property.notes || []
+      };
+    });
+    
+    setProperties(convertedData);
+    setFilteredProperties(convertedData);
     setLoading(false);
   };
 
@@ -172,8 +194,22 @@ function App() {
     }
   };
 
-  const handleNotesUpdate = async (propertyId, notes) => {
-    const result = await dataService.updateNotes(propertyId, notes);
+  // Updated to handle adding a note to the array
+  const handleAddNote = async (newNote) => {
+    if (!selectedProperty) return;
+    
+    // Get current notes array (or initialize if needed)
+    const currentNotes = Array.isArray(selectedProperty.notes) 
+      ? selectedProperty.notes 
+      : selectedProperty.notes 
+        ? [{ text: selectedProperty.notes, user: 'System', timestamp: new Date().toISOString(), userId: 'system' }]
+        : [];
+    
+    // Add the new note to the array
+    const updatedNotes = [...currentNotes, newNote];
+    
+    // Update in database
+    const result = await dataService.updateNotes(selectedProperty.id, updatedNotes);
     if (result) {
       await loadProperties();
     }
@@ -195,7 +231,7 @@ function App() {
   // Show loading screen while checking authentication
   if (authLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 sm:p-6 flex items-center justify-center">
         <div className="text-xl text-gray-600">Loading...</div>
       </div>
     );
@@ -209,7 +245,7 @@ function App() {
   // Show loading while fetching properties
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-6 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 sm:p-6 flex items-center justify-center">
         <div className="text-xl text-gray-600">Loading properties...</div>
       </div>
     );
@@ -217,7 +253,7 @@ function App() {
 
   // Main dashboard (only shown when authenticated)
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-6">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 p-4 sm:p-6">
       <div className="max-w-7xl mx-auto">
         <Header 
           currentUser={currentUser}
@@ -265,31 +301,31 @@ function App() {
             
             {/* View Mode Toggle */}
             <div className="bg-white rounded-xl shadow-lg p-4 mb-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                <div className="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4">
                   <span className="text-sm font-medium text-gray-700">View Mode:</span>
                   <div className="flex gap-2">
                     <button
                       onClick={() => setViewMode('overview')}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                      className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm ${
                         viewMode === 'overview'
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
                       <LayoutList className="w-4 h-4" />
-                      Overview
+                      <span className="hidden sm:inline">Overview</span>
                     </button>
                     <button
                       onClick={() => setViewMode('detail')}
-                      className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                      className={`flex items-center gap-2 px-3 sm:px-4 py-2 rounded-lg transition-colors text-sm ${
                         viewMode === 'detail'
                           ? 'bg-blue-600 text-white'
                           : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
                       }`}
                     >
                       <LayoutGrid className="w-4 h-4" />
-                      Detail View
+                      <span className="hidden sm:inline">Detail View</span>
                     </button>
                   </div>
                 </div>
@@ -335,8 +371,8 @@ function App() {
                       setAddingZone={setAddingZone}
                     />
                     <NotesSection
-                      notes={selectedProperty.notes}
-                      onUpdate={(notes) => handleNotesUpdate(selectedProperty.id, notes)}
+                      notes={selectedProperty.notes || []}
+                      onAddNote={handleAddNote}
                       currentUser={currentUser}
                     />
                   </>

@@ -46,8 +46,22 @@ export const dataService = {
           };
         });
 
+        // Convert notes to array format if it's still a string (for backward compatibility)
+        let notesArray = property.notes;
+        if (typeof property.notes === 'string' && property.notes) {
+          notesArray = [{
+            text: property.notes,
+            user: 'System',
+            timestamp: property.updated_at || new Date().toISOString(),
+            userId: 'system'
+          }];
+        } else if (!property.notes) {
+          notesArray = [];
+        }
+
         return {
           ...property,
+          notes: notesArray,
           zones: zonesWithHistory
         };
       });
@@ -149,12 +163,18 @@ export const dataService = {
     }
   },
 
-  // Update notes
+  // Update notes - now handles array of notes
   async updateNotes(propertyId, notes) {
     try {
+      // Ensure notes is always an array
+      const notesArray = Array.isArray(notes) ? notes : [];
+      
       const { data, error } = await supabase
         .from('properties')
-        .update({ notes, updated_at: new Date() })
+        .update({ 
+          notes: notesArray, 
+          updated_at: new Date() 
+        })
         .eq('id', propertyId)
         .select();
 
@@ -162,6 +182,62 @@ export const dataService = {
       return data[0];
     } catch (error) {
       console.error('Error updating notes:', error);
+      return null;
+    }
+  },
+
+  // Add a single note to a property (helper method)
+  async addNote(propertyId, noteText, currentUser) {
+    try {
+      // First get the current property to access existing notes
+      const { data: property, error: fetchError } = await supabase
+        .from('properties')
+        .select('notes')
+        .eq('id', propertyId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Handle existing notes
+      let existingNotes = property.notes || [];
+      
+      // Convert old string format if needed
+      if (typeof existingNotes === 'string' && existingNotes) {
+        existingNotes = [{
+          text: existingNotes,
+          user: 'System',
+          timestamp: new Date().toISOString(),
+          userId: 'system'
+        }];
+      } else if (!Array.isArray(existingNotes)) {
+        existingNotes = [];
+      }
+
+      // Create the new note
+      const newNote = {
+        text: noteText,
+        user: currentUser?.name || 'Unknown User',
+        timestamp: new Date().toISOString(),
+        userId: currentUser?.id || 'unknown'
+      };
+
+      // Combine notes
+      const updatedNotes = [...existingNotes, newNote];
+
+      // Update the property
+      const { data, error } = await supabase
+        .from('properties')
+        .update({ 
+          notes: updatedNotes, 
+          updated_at: new Date() 
+        })
+        .eq('id', propertyId)
+        .select();
+
+      if (error) throw error;
+      return data[0];
+    } catch (error) {
+      console.error('Error adding note:', error);
       return null;
     }
   },
@@ -176,27 +252,59 @@ export const dataService = {
         // Check if property exists by name
         const { data: existing } = await supabase
           .from('properties')
-          .select('id')
+          .select('id, notes')
           .eq('name', property.name)
           .single();
 
         if (existing) {
+          // Preserve existing notes when updating
+          const updateData = { ...property };
+          
+          // If the existing property has notes and the CSV doesn't include notes,
+          // preserve the existing notes
+          if (!property.notes && existing.notes) {
+            updateData.notes = existing.notes;
+          } else if (property.notes && typeof property.notes === 'string') {
+            // Convert string notes from CSV to array format
+            updateData.notes = [{
+              text: property.notes,
+              user: 'CSV Import',
+              timestamp: new Date().toISOString(),
+              userId: 'csv-import'
+            }];
+          }
+          
           // Update existing property
           const { error } = await supabase
             .from('properties')
             .update({
-              ...property,
+              ...updateData,
               updated_at: new Date()
             })
             .eq('id', existing.id);
 
           if (!error) updated++;
         } else {
+          // Handle notes for new properties
+          const insertData = { ...property };
+          
+          if (property.notes && typeof property.notes === 'string') {
+            // Convert string notes to array format
+            insertData.notes = [{
+              text: property.notes,
+              user: 'CSV Import',
+              timestamp: new Date().toISOString(),
+              userId: 'csv-import'
+            }];
+          } else if (!property.notes) {
+            insertData.notes = [];
+          }
+          
           // Create new property with a placeholder address if not provided
           const { error } = await supabase
             .from('properties')
             .insert({
-              ...property,
+              ...insertData,
               address: property.address || property.name, // Use name as address if not provided
               created_at: new Date(),
               updated_at: new Date()
@@ -229,27 +337,59 @@ export const dataService = {
         // Check if property exists by name
         const { data: existing } = await supabase
           .from('properties')
-          .select('id')
+          .select('id, notes')
           .eq('name', property.name)
           .single();
 
         if (existing) {
+          // Preserve existing notes when updating
+          const updateData = { ...property };
+          
+          // If the existing property has notes and the CSV doesn't include notes,
+          // preserve the existing notes
+          if (!property.notes && existing.notes) {
+            updateData.notes = existing.notes;
+          } else if (property.notes && typeof property.notes === 'string') {
+            // Convert string notes from CSV to array format
+            updateData.notes = [{
+              text: property.notes,
+              user: 'CSV Import',
+              timestamp: new Date().toISOString(),
+              userId: 'csv-import'
+            }];
+          }
+          
           // Update existing property
           const { error } = await supabase
             .from('properties')
             .update({
-              ...property,
+              ...updateData,
               updated_at: new Date()
             })
             .eq('id', existing.id);
 
           if (!error) updated++;
         } else {
+          // Handle notes for new properties
+          const insertData = { ...property };
+          
+          if (property.notes && typeof property.notes === 'string') {
+            // Convert string notes to array format
+            insertData.notes = [{
+              text: property.notes,
+              user: 'CSV Import',
+              timestamp: new Date().toISOString(),
+              userId: 'csv-import'
+            }];
+          } else if (!property.notes) {
+            insertData.notes = [];
+          }
+          
           // Create new property with a placeholder address if not provided
           const { error } = await supabase
             .from('properties')
             .insert({
-              ...property,
+              ...insertData,
               address: property.address || property.name, // Use name as address if not provided
               created_at: new Date(),
               updated_at: new Date()
