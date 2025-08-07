@@ -174,20 +174,168 @@ function PropertiesOverview({ properties, onSelectProperty }) {
     return tooltip;
   };
 
+  // Mobile Card Component
+  const PropertyCard = ({ property }) => {
+    const recentNote = getMostRecentNote(property);
+    const hasNote = recentNote !== null;
+    const isExpanded = expandedProperties.has(property.id);
+    
+    return (
+      <div className={`bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden ${hasNote ? 'ring-2 ring-yellow-400' : ''}`}>
+        {/* Card Header */}
+        <div className="p-4 border-b border-gray-100">
+          <div className="flex items-start justify-between mb-2">
+            <div className="flex-1">
+              <button
+                onClick={() => onSelectProperty(property)}
+                className="text-blue-600 hover:text-blue-800 font-semibold text-left"
+              >
+                {property.name}
+              </button>
+              <p className="text-sm text-gray-600 mt-1">{property.region}</p>
+            </div>
+            <button
+              onClick={() => onSelectProperty(property)}
+              className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg"
+            >
+              <Settings className="w-5 h-5" />
+            </button>
+          </div>
+          
+          {hasNote && (
+            <div className="flex items-start gap-2 p-2 bg-yellow-50 rounded-md">
+              <StickyNote className="w-4 h-4 text-yellow-600 mt-0.5" />
+              <div className="flex-1 text-xs">
+                <p className="font-medium text-gray-700">
+                  {recentNote.source} - {recentNote.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </p>
+                <p className="text-gray-600 mt-1 line-clamp-2">{recentNote.note}</p>
+              </div>
+            </div>
+          )}
+        </div>
+        
+        {/* Card Body */}
+        <div className="p-4 space-y-3">
+          <div className="grid grid-cols-2 gap-3 text-sm">
+            <div>
+              <p className="text-gray-500">Timer</p>
+              <p className={property.timer_type ? 'font-medium text-blue-600' : 'text-gray-400'}>
+                {property.timer_type || 'Not set'}
+              </p>
+            </div>
+            <div>
+              <p className="text-gray-500">Zones</p>
+              <p className="font-medium">{property.zones?.length || 0} zones / {getTotalDuration(property.zones)} min</p>
+            </div>
+            <div>
+              <p className="text-gray-500">Last Invoice</p>
+              <div className="flex items-center gap-1">
+                {getStatusIcon(property.days_since_irrigation_invoice)}
+                <span className={getStatusColor(property.days_since_irrigation_invoice)}>
+                  {property.days_since_irrigation_invoice || 'N/A'} days
+                </span>
+              </div>
+            </div>
+            <div>
+              <p className="text-gray-500">Last Visit</p>
+              <div className="flex items-center gap-1">
+                {getStatusIcon(property.days_since_irrigation_visit)}
+                <span className={getStatusColor(property.days_since_irrigation_visit)}>
+                  {property.days_since_irrigation_visit || 'N/A'} days
+                </span>
+              </div>
+            </div>
+          </div>
+          
+          <div>
+            <p className="text-gray-500 text-sm">Schedule</p>
+            <p className="font-medium text-sm">{getScheduleSummary(property.zones)}</p>
+          </div>
+          
+          {property.zones && property.zones.length > 0 && (
+            <button
+              onClick={() => toggleExpanded(property.id)}
+              className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
+            >
+              {isExpanded ? (
+                <>Hide Zones <ChevronUp className="w-4 h-4" /></>
+              ) : (
+                <>Show Zones <ChevronDown className="w-4 h-4" /></>
+              )}
+            </button>
+          )}
+        </div>
+        
+        {/* Expanded Zones */}
+        {isExpanded && property.zones && property.zones.length > 0 && (
+          <div className="px-4 pb-4">
+            <div className="bg-gray-50 rounded-lg p-3 space-y-2">
+              {property.zones.map((zone) => (
+                <div key={zone.id} className="bg-white p-2 rounded border border-gray-200">
+                  <div className="flex items-center gap-2 mb-1">
+                    {getZoneIcon(zone.type)}
+                    <span className="font-medium text-sm">{zone.name}</span>
+                    <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full capitalize">
+                      {zone.type}
+                    </span>
+                  </div>
+                  <div className="flex flex-wrap gap-3 text-xs text-gray-600">
+                    <span className="flex items-center gap-1">
+                      <Clock className="w-3 h-3" />
+                      {zone.duration} min
+                    </span>
+                    <span className="flex items-center gap-1">
+                      <Calendar className="w-3 h-3" />
+                      {formatFrequency(zone.frequency, zone.days)}
+                    </span>
+                    {zone.last_adjusted_by && (
+                      <span className="flex items-center gap-1">
+                        <User className="w-3 h-3" />
+                        {zone.last_adjusted_by}
+                      </span>
+                    )}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden h-[600px] flex flex-col">
-      <div className="p-6 border-b border-gray-200">
+      <div className="p-4 lg:p-6 border-b border-gray-200">
         <h2 className="text-xl font-semibold text-gray-800">Properties Overview</h2>
         <p className="text-sm text-gray-600 mt-1">
-          Click property name to view details • Click arrow to expand zones
-          <span className="ml-2">
+          <span className="hidden lg:inline">Click property name to view details • Click arrow to expand zones</span>
+          <span className="lg:hidden">Tap property to view details</span>
+          <span className="hidden sm:inline ml-2">
             <StickyNote className="w-3 h-3 text-yellow-600 inline mr-1" />
-            = Recent note (hover to view)
+            = Recent note
           </span>
         </p>
       </div>
       
-      <div className="flex-1 overflow-x-auto overflow-y-auto relative" style={{ maxHeight: 'calc(100% - 88px)' }}>
+      {/* Mobile View - Cards */}
+      <div className="lg:hidden flex-1 overflow-y-auto p-4">
+        {sortedProperties.length === 0 ? (
+          <div className="text-center py-8 text-gray-500">
+            No properties found matching the selected filters
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {sortedProperties.map((property) => (
+              <PropertyCard key={property.id} property={property} />
+            ))}
+          </div>
+        )}
+      </div>
+      
+      {/* Desktop View - Table */}
+      <div className="hidden lg:block flex-1 overflow-x-auto overflow-y-auto relative" style={{ maxHeight: 'calc(100% - 88px)' }}>
         <table className="w-full table-auto">
           <thead className="sticky top-0 z-10">
             <tr className="bg-gray-50 border-b border-gray-200">
