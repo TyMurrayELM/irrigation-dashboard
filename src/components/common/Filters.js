@@ -54,9 +54,10 @@ function Filters({ properties, filters, onFilterChange }) {
       <div className="flex items-center gap-2 mb-3">
         <Filter className="w-5 h-5 text-gray-600" />
         <h3 className="font-semibold text-gray-800">Filters</h3>
-        <span className="text-xs text-gray-500 ml-2">(Options update based on selections)</span>
+        <span className="hidden sm:inline text-xs text-gray-500 ml-2">(Options update based on selections)</span>
       </div>
-      <div className="grid grid-cols-5 gap-3">
+      {/* Responsive grid: 1 col mobile, 2 cols tablet, 5 cols desktop */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
         <FilterSelect
           label="Region"
           value={filters.region}
@@ -99,12 +100,12 @@ function Filters({ properties, filters, onFilterChange }) {
 
 function FilterSelect({ label, value, onChange, options, placeholder }) {
   return (
-    <div>
-      <label className="text-xs text-gray-600">{label}</label>
+    <div className="w-full">
+      <label className="text-xs text-gray-600 block mb-1">{label}</label>
       <select
         value={value}
         onChange={(e) => onChange(e.target.value)}
-        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400"
+        className="w-full px-3 py-2 border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
       >
         <option value="">{placeholder}</option>
         {options.map(option => (
