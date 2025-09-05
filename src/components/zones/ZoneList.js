@@ -14,6 +14,8 @@ function ZoneList({
   addingZone,
   setAddingZone
 }) {
+  const controllers = property.controllers || [];
+
   return (
     <div className="bg-white rounded-xl shadow-lg p-4 sm:p-6 mb-6">
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 mb-6">
@@ -34,6 +36,7 @@ function ZoneList({
         {addingZone && (
           <div className="border-2 border-green-400 rounded-lg p-4">
             <ZoneForm
+              controllers={controllers}
               onSave={(zone) => {
                 onAddZone(property.id, zone);
                 setAddingZone(false);
@@ -48,6 +51,7 @@ function ZoneList({
             key={zone.id}
             zone={zone}
             propertyId={property.id}
+            controllers={controllers}
             onZoneUpdate={onZoneUpdate}
             onDeleteZone={onDeleteZone}
             currentUser={currentUser}

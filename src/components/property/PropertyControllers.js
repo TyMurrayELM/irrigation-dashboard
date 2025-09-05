@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Plus, Edit2, Trash2, MapPin, Hash, StickyNote, X, Save } from 'lucide-react';
+import { Settings, Plus, Edit2, Trash2, MapPin, Hash, StickyNote, X, Save, Droplets } from 'lucide-react';
 import { timerTypes } from '../../data/constants';
 
 function PropertyControllers({ property, controllers, onAddController, onUpdateController, onDeleteController, currentUser }) {
@@ -49,82 +49,113 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
   };
 
   const handleDelete = async (controllerId) => {
-    if (window.confirm('Are you sure you want to remove this controller?')) {
+    if (window.confirm('Are you sure you want to remove this controller? Any zones assigned to it will be unassigned.')) {
       await onDeleteController(controllerId);
     }
   };
 
-  const ControllerForm = ({ isEdit = false }) => (
-    <div className="bg-blue-50 rounded-lg p-4 space-y-3">
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-        <div>
-          <label className="text-xs text-gray-600 block mb-1">Controller Type *</label>
-          <select
-            value={formData.controller_type}
-            onChange={(e) => setFormData({ ...formData, controller_type: e.target.value })}
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+  // Count zones assigned to each controller
+  const getZoneCount = (controllerId) => {
+    if (!property.zones) return 0;
+    return property.zones.filter(zone => zone.controller_id === controllerId).length;
+  };
+
+  // Get zone names for a controller
+  const getZoneNames = (controllerId) => {
+    if (!property.zones) return [];
+    return property.zones
+      .filter(zone => zone.controller_id === controllerId)
+      .map(zone => zone.name);
+  };
+
+  const ControllerForm = ({ isEdit = false }) => {
+    // Use local state for form to prevent re-renders affecting parent
+    const [localFormData, setLocalFormData] = useState(formData);
+
+    const handleLocalSubmit = () => {
+      setFormData(localFormData);
+      if (isEdit) {
+        handleUpdate();
+      } else {
+        handleAdd();
+      }
+    };
+
+    return (
+      <div className="bg-blue-50 rounded-lg p-4 space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label className="text-xs text-gray-600 block mb-1">Controller Type *</label>
+            <select
+              value={localFormData.controller_type}
+              onChange={(e) => setLocalFormData({ ...localFormData, controller_type: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+            >
+              <option value="">Select Controller Type</option>
+              {timerTypes.map(type => (
+                <option key={type} value={type}>{type}</option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-xs text-gray-600 block mb-1">Location</label>
+            <input
+              type="text"
+              placeholder="e.g., Front yard, Back yard"
+              value={localFormData.controller_location}
+              onChange={(e) => setLocalFormData({ ...localFormData, controller_location: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-600 block mb-1">Serial Number</label>
+            <input
+              type="text"
+              placeholder="Serial/Model number"
+              value={localFormData.serial_number}
+              onChange={(e) => setLocalFormData({ ...localFormData, serial_number: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+            />
+          </div>
+          <div>
+            <label className="text-xs text-gray-600 block mb-1">Notes</label>
+            <input
+              type="text"
+              placeholder="Additional notes"
+              value={localFormData.notes}
+              onChange={(e) => setLocalFormData({ ...localFormData, notes: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+            />
+          </div>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2">
+          <button
+            onClick={handleLocalSubmit}
+            disabled={!localFormData.controller_type}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors min-h-[40px]"
           >
-            <option value="">Select Controller Type</option>
-            {timerTypes.map(type => (
-              <option key={type} value={type}>{type}</option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label className="text-xs text-gray-600 block mb-1">Location</label>
-          <input
-            type="text"
-            placeholder="e.g., Front yard, Back yard"
-            value={formData.controller_location}
-            onChange={(e) => setFormData({ ...formData, controller_location: e.target.value })}
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
-          />
-        </div>
-        <div>
-          <label className="text-xs text-gray-600 block mb-1">Serial Number</label>
-          <input
-            type="text"
-            placeholder="Serial/Model number"
-            value={formData.serial_number}
-            onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
-          />
-        </div>
-        <div>
-          <label className="text-xs text-gray-600 block mb-1">Notes</label>
-          <input
-            type="text"
-            placeholder="Additional notes"
-            value={formData.notes}
-            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
-          />
+            <Save className="w-4 h-4" />
+            {isEdit ? 'Update' : 'Add'} Controller
+          </button>
+          <button
+            onClick={resetForm}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors min-h-[40px]"
+          >
+            <X className="w-4 h-4" />
+            Cancel
+          </button>
         </div>
       </div>
-      <div className="flex flex-col sm:flex-row gap-2">
-        <button
-          onClick={isEdit ? handleUpdate : handleAdd}
-          disabled={!formData.controller_type}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors min-h-[40px]"
-        >
-          <Save className="w-4 h-4" />
-          {isEdit ? 'Update' : 'Add'} Controller
-        </button>
-        <button
-          onClick={resetForm}
-          className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors min-h-[40px]"
-        >
-          <X className="w-4 h-4" />
-          Cancel
-        </button>
-      </div>
-    </div>
-  );
+    );
+  };
 
   const ControllerCard = ({ controller }) => {
     if (editingId === controller.id) {
       return <ControllerForm isEdit={true} />;
     }
+
+    const zoneCount = getZoneCount(controller.id);
+    const zoneNames = getZoneNames(controller.id);
 
     return (
       <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
@@ -133,6 +164,11 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
             <div className="flex items-center gap-2 mb-2">
               <Settings className="w-5 h-5 text-blue-600" />
               <span className="font-semibold text-gray-900">{controller.controller_type}</span>
+              {zoneCount > 0 && (
+                <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
+                  {zoneCount} zone{zoneCount > 1 ? 's' : ''}
+                </span>
+              )}
             </div>
             <div className="flex flex-wrap gap-3 text-sm text-gray-600">
               {controller.controller_location && (
@@ -154,6 +190,14 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
                 </div>
               )}
             </div>
+            {zoneCount > 0 && (
+              <div className="mt-2 flex items-start gap-1">
+                <Droplets className="w-3 h-3 text-blue-500 mt-0.5" />
+                <div className="text-xs text-gray-500">
+                  Zones: {zoneNames.join(', ')}
+                </div>
+              </div>
+            )}
           </div>
           {currentUser && (
             <div className="flex gap-2">

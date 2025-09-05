@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, Calendar, User, History, Edit2, Trash2, ChevronUp } from 'lucide-react';
+import { Clock, Calendar, User, History, Edit2, Trash2, ChevronUp, Settings } from 'lucide-react';
 import { getZoneIcon } from '../../utils/icons';
 import { formatFrequency } from '../../utils/helpers';
 import ZoneForm from './ZoneForm';
@@ -11,15 +11,20 @@ function ZoneCard({
   onDeleteZone,
   currentUser,
   isEditing,
-  setIsEditing
+  setIsEditing,
+  controllers = []
 }) {
   const [expandedHistory, setExpandedHistory] = useState(false);
+
+  // Find the controller for this zone
+  const assignedController = controllers.find(c => c.id === zone.controller_id);
 
   if (isEditing) {
     return (
       <div className="border-2 border-blue-400 rounded-lg p-4">
         <ZoneForm
           zone={zone}
+          controllers={controllers}
           onSave={(updates, note) => {
             onZoneUpdate(propertyId, zone.id, updates, note);
             setIsEditing(false);
@@ -44,6 +49,13 @@ function ZoneCard({
               <span className="px-2 py-1 bg-gray-100 text-xs rounded-full capitalize whitespace-nowrap">
                 {zone.type}
               </span>
+              {assignedController && (
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 text-xs rounded-full whitespace-nowrap flex items-center gap-1">
+                  <Settings className="w-3 h-3" />
+                  {assignedController.controller_type}
+                  {assignedController.controller_location && ` - ${assignedController.controller_location}`}
+                </span>
+              )}
             </div>
             
             {/* Zone Details - Stack on mobile, inline on desktop */}

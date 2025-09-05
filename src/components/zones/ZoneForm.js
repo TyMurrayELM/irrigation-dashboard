@@ -1,14 +1,15 @@
 import React, { useState } from 'react';
-import { Save, X } from 'lucide-react';
+import { Save, X, Settings } from 'lucide-react';
 import { frequencyOptions, weekDays } from '../../data/constants';
 
-function ZoneForm({ zone, onSave, onCancel }) {
+function ZoneForm({ zone, onSave, onCancel, controllers = [] }) {
   const [formData, setFormData] = useState({
     name: zone?.name || '',
     type: zone?.type || 'turf',
     duration: zone?.duration || 15,
     frequency: zone?.frequency || 'daily',
-    days: zone?.days || []
+    days: zone?.days || [],
+    controller_id: zone?.controller_id || null
   });
   const [changeNote, setChangeNote] = useState('');
 
@@ -84,6 +85,29 @@ function ZoneForm({ zone, onSave, onCancel }) {
           </select>
         </div>
       </div>
+
+      {/* Controller Selection */}
+      {controllers.length > 0 && (
+        <div>
+          <label className="text-xs text-gray-600 block mb-1">
+            <Settings className="w-3 h-3 inline mr-1" />
+            Assign to Controller
+          </label>
+          <select
+            value={formData.controller_id || ''}
+            onChange={(e) => setFormData({ ...formData, controller_id: e.target.value ? parseInt(e.target.value) : null })}
+            className="w-full sm:max-w-xs px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+          >
+            <option value="">No Controller Assigned</option>
+            {controllers.map(controller => (
+              <option key={controller.id} value={controller.id}>
+                {controller.controller_type}
+                {controller.controller_location && ` - ${controller.controller_location}`}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       
       {formData.frequency === 'custom-days' && (
         <div>
