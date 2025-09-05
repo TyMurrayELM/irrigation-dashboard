@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Settings, Plus, Edit2, Trash2, MapPin, Hash, StickyNote, X, Save, Droplets } from 'lucide-react';
+import { Settings, Plus, Edit2, Trash2, MapPin, Hash, StickyNote, X, Save, Droplets, AlertCircle } from 'lucide-react';
 import { timerTypes } from '../../data/constants';
 
 function PropertyControllers({ property, controllers, onAddController, onUpdateController, onDeleteController, currentUser }) {
@@ -11,6 +11,7 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
     serial_number: '',
     notes: ''
   });
+  const [customTimerType, setCustomTimerType] = useState('');
 
   const resetForm = () => {
     setFormData({
@@ -19,31 +20,60 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
       serial_number: '',
       notes: ''
     });
+    setCustomTimerType('');
     setIsAdding(false);
     setEditingId(null);
   };
 
   const handleAdd = async () => {
-    if (formData.controller_type) {
-      await onAddController(property.id, formData);
+    // Use custom timer type if "Other" is selected
+    const finalControllerType = formData.controller_type === 'Other' 
+      ? customTimerType 
+      : formData.controller_type;
+    
+    if (finalControllerType) {
+      await onAddController(property.id, {
+        ...formData,
+        controller_type: finalControllerType
+      });
       resetForm();
     }
   };
 
   const handleEdit = (controller) => {
     setEditingId(controller.id);
+    
+    // Check if the controller type is a standard one or custom
+    const isStandardType = timerTypes.includes(controller.controller_type);
+    
     setFormData({
-      controller_type: controller.controller_type || '',
+      controller_type: isStandardType ? controller.controller_type : 'Other',
       controller_location: controller.controller_location || '',
       serial_number: controller.serial_number || '',
       notes: controller.notes || ''
     });
+    
+    // If it's a custom type, set the custom timer input
+    if (!isStandardType) {
+      setCustomTimerType(controller.controller_type);
+    } else {
+      setCustomTimerType('');
+    }
+    
     setIsAdding(false);
   };
 
   const handleUpdate = async () => {
-    if (formData.controller_type) {
-      await onUpdateController(editingId, formData);
+    // Use custom timer type if "Other" is selected
+    const finalControllerType = formData.controller_type === 'Other' 
+      ? customTimerType 
+      : formData.controller_type;
+    
+    if (finalControllerType) {
+      await onUpdateController(editingId, {
+        ...formData,
+        controller_type: finalControllerType
+      });
       resetForm();
     }
   };
@@ -71,13 +101,36 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
   const ControllerForm = ({ isEdit = false }) => {
     // Use local state for form to prevent re-renders affecting parent
     const [localFormData, setLocalFormData] = useState(formData);
+    const [localCustomTimerType, setLocalCustomTimerType] = useState(customTimerType);
+    const showCustomInput = localFormData.controller_type === 'Other';
 
     const handleLocalSubmit = () => {
+      // Validate that if "Other" is selected, custom type is provided
+      if (localFormData.controller_type === 'Other' && !localCustomTimerType.trim()) {
+        alert('Please enter a custom controller type');
+        return;
+      }
+      
       setFormData(localFormData);
-      if (isEdit) {
-        handleUpdate();
-      } else {
-        handleAdd();
+      setCustomTimerType(localCustomTimerType);
+      
+      // Need to handle the submit with the correct data
+      const finalControllerType = localFormData.controller_type === 'Other' 
+        ? localCustomTimerType 
+        : localFormData.controller_type;
+      
+      if (finalControllerType) {
+        if (isEdit) {
+          onUpdateController(editingId, {
+            ...localFormData,
+            controller_type: finalControllerType
+          }).then(() => resetForm());
+        } else {
+          onAddController(property.id, {
+            ...localFormData,
+            controller_type: finalControllerType
+          }).then(() => resetForm());
+        }
       }
     };
 
@@ -88,7 +141,13 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
             <label className="text-xs text-gray-600 block mb-1">Controller Type *</label>
             <select
               value={localFormData.controller_type}
-              onChange={(e) => setLocalFormData({ ...localFormData, controller_type: e.target.value })}
+              onChange={(e) => {
+                setLocalFormData({ ...localFormData, controller_type: e.target.value });
+                // Clear custom type if switching away from "Other"
+                if (e.target.value !== 'Other') {
+                  setLocalCustomTimerType('');
+                }
+              }}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
             >
               <option value="">Select Controller Type</option>
@@ -97,16 +156,50 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
               ))}
             </select>
           </div>
-          <div>
-            <label className="text-xs text-gray-600 block mb-1">Location</label>
-            <input
-              type="text"
-              placeholder="e.g., Front yard, Back yard"
-              value={localFormData.controller_location}
-              onChange={(e) => setLocalFormData({ ...localFormData, controller_location: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
-            />
-          </div>
+          
+          {showCustomInput ? (
+            <div>
+              <label className="text-xs text-gray-600 block mb-1">
+                Custom Controller Type *
+                <AlertCircle className="w-3 h-3 inline ml-1 text-blue-500" />
+              </label>
+              <input
+                type="text"
+                placeholder="Enter custom controller type"
+                value={localCustomTimerType}
+                onChange={(e) => setLocalCustomTimerType(e.target.value)}
+                className="w-full px-3 py-2 border-2 border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+                autoFocus
+              />
+            </div>
+          ) : (
+            <div>
+              <label className="text-xs text-gray-600 block mb-1">Location</label>
+              <input
+                type="text"
+                placeholder="e.g., Front yard, Back yard"
+                value={localFormData.controller_location}
+                onChange={(e) => setLocalFormData({ ...localFormData, controller_location: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+              />
+            </div>
+          )}
+        </div>
+
+        {/* Second row - adjust layout when custom input is shown */}
+        <div className={`grid grid-cols-1 ${showCustomInput ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`}>
+          {showCustomInput && (
+            <div>
+              <label className="text-xs text-gray-600 block mb-1">Location</label>
+              <input
+                type="text"
+                placeholder="e.g., Front yard, Back yard"
+                value={localFormData.controller_location}
+                onChange={(e) => setLocalFormData({ ...localFormData, controller_location: e.target.value })}
+                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+              />
+            </div>
+          )}
           <div>
             <label className="text-xs text-gray-600 block mb-1">Serial Number</label>
             <input
@@ -128,10 +221,20 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
             />
           </div>
         </div>
+
+        {showCustomInput && (
+          <div className="flex items-start gap-2 p-2 bg-blue-100 rounded-lg">
+            <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+            <p className="text-xs text-blue-800">
+              Enter the specific model or brand of your controller (e.g., "Rain Bird ESP-RZXe", "Toro Evolution", etc.)
+            </p>
+          </div>
+        )}
+
         <div className="flex flex-col sm:flex-row gap-2">
           <button
             onClick={handleLocalSubmit}
-            disabled={!localFormData.controller_type}
+            disabled={!localFormData.controller_type || (localFormData.controller_type === 'Other' && !localCustomTimerType.trim())}
             className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors min-h-[40px]"
           >
             <Save className="w-4 h-4" />
@@ -156,6 +259,9 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
 
     const zoneCount = getZoneCount(controller.id);
     const zoneNames = getZoneNames(controller.id);
+    
+    // Check if this is a custom controller type
+    const isCustomType = !timerTypes.includes(controller.controller_type);
 
     return (
       <div className="border border-gray-200 rounded-lg p-4 hover:border-blue-300 transition-colors">
@@ -163,7 +269,14 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
           <div className="flex-1">
             <div className="flex items-center gap-2 mb-2">
               <Settings className="w-5 h-5 text-blue-600" />
-              <span className="font-semibold text-gray-900">{controller.controller_type}</span>
+              <span className="font-semibold text-gray-900">
+                {controller.controller_type}
+              </span>
+              {isCustomType && (
+                <span className="px-2 py-0.5 bg-purple-100 text-purple-700 text-xs rounded-full">
+                  Custom
+                </span>
+              )}
               {zoneCount > 0 && (
                 <span className="px-2 py-1 bg-green-100 text-green-700 text-xs rounded-full">
                   {zoneCount} zone{zoneCount > 1 ? 's' : ''}
