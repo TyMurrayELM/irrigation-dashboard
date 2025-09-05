@@ -6,13 +6,19 @@ export const webhookService = {
 
   // Send webhook notification
   async sendWebhook(eventType, payload) {
+    console.log('🔔 Webhook URL:', this.webhookUrl); // Debug log
+    console.log('📤 Attempting to send webhook:', eventType); // Debug log
+    console.log('📦 Payload:', payload); // Debug log
+    
     // Only send if webhook URL is configured
     if (!this.webhookUrl) {
-      console.log('Webhook URL not configured, skipping webhook');
+      console.log('⚠️ Webhook URL not configured, skipping webhook');
       return { success: true, skipped: true };
     }
 
     try {
+      console.log('🚀 Sending POST request to:', this.webhookUrl);
+      
       const response = await fetch(this.webhookUrl, {
         method: 'POST',
         headers: {
@@ -27,14 +33,22 @@ export const webhookService = {
         })
       });
 
+      console.log('📨 Response status:', response.status);
+      console.log('📨 Response ok:', response.ok);
+
       if (!response.ok) {
         throw new Error(`Webhook failed: ${response.status} ${response.statusText}`);
       }
 
-      console.log(`Webhook sent successfully for event: ${eventType}`);
+      console.log(`✅ Webhook sent successfully for event: ${eventType}`);
       return { success: true, response };
     } catch (error) {
-      console.error('Error sending webhook:', error);
+      console.error('❌ Webhook error details:', {
+        url: this.webhookUrl,
+        event: eventType,
+        error: error.message,
+        stack: error.stack
+      });
       // Don't fail the main operation if webhook fails
       return { success: false, error };
     }

@@ -331,6 +331,18 @@ function App() {
           onSignOut={handleSignOut}
         />
         
+        {/* Temporary Test Webhook Button */}
+        {currentUser && (
+          <div className="mb-4 flex justify-center">
+            <button 
+              onClick={testWebhook}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2"
+            >
+              🚀 Test Webhook Connection
+            </button>
+          </div>
+        )}
+        
         {/* Admin User Activity Button - Simple and non-intrusive */}
         {currentUser?.isAdmin && (
           <div className="mb-4 flex justify-end">
