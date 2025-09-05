@@ -246,7 +246,7 @@ function App() {
     }
   };
 
-  // Updated to handle adding a note to the array
+  // Note management functions
   const handleAddNote = async (newNote) => {
     if (!selectedProperty) return;
     
@@ -262,6 +262,24 @@ function App() {
     
     // Update in database
     const result = await dataService.updateNotes(selectedProperty.id, updatedNotes);
+    if (result) {
+      await loadProperties();
+    }
+  };
+
+  const handleUpdateNote = async (noteIndex, updatedNote) => {
+    if (!selectedProperty) return;
+    
+    const result = await dataService.updateNote(selectedProperty.id, noteIndex, updatedNote);
+    if (result) {
+      await loadProperties();
+    }
+  };
+
+  const handleDeleteNote = async (noteIndex) => {
+    if (!selectedProperty) return;
+    
+    const result = await dataService.deleteNote(selectedProperty.id, noteIndex);
     if (result) {
       await loadProperties();
     }
@@ -428,6 +446,8 @@ function App() {
                     <NotesSection
                       notes={selectedProperty.notes || []}
                       onAddNote={handleAddNote}
+                      onUpdateNote={handleUpdateNote}
+                      onDeleteNote={handleDeleteNote}
                       currentUser={currentUser}
                     />
                   </>

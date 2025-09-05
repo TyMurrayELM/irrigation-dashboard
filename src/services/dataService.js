@@ -297,6 +297,82 @@ export const dataService = {
     }
   },
 
+  // Update a single note
+  async updateNote(propertyId, noteIndex, updatedNote) {
+    try {
+      // First get the current property to access existing notes
+      const { data: property, error: fetchError } = await supabase
+        .from('properties')
+        .select('notes')
+        .eq('id', propertyId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Get current notes
+      let currentNotes = property.notes || [];
+      
+      // Update the specific note
+      if (noteIndex >= 0 && noteIndex < currentNotes.length) {
+        currentNotes[noteIndex] = updatedNote;
+      }
+
+      // Update the property
+      const { data, error } = await supabase
+        .from('properties')
+        .update({ 
+          notes: currentNotes, 
+          updated_at: new Date() 
+        })
+        .eq('id', propertyId)
+        .select();
+
+      if (error) throw error;
+      return data[0];
+    } catch (error) {
+      console.error('Error updating note:', error);
+      return null;
+    }
+  },
+
+  // Delete a single note
+  async deleteNote(propertyId, noteIndex) {
+    try {
+      // First get the current property to access existing notes
+      const { data: property, error: fetchError } = await supabase
+        .from('properties')
+        .select('notes')
+        .eq('id', propertyId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      // Get current notes
+      let currentNotes = property.notes || [];
+      
+      // Remove the specific note
+      if (noteIndex >= 0 && noteIndex < currentNotes.length) {
+        currentNotes.splice(noteIndex, 1);
+      }
+
+      // Update the property
+      const { data, error } = await supabase
+        .from('properties')
+        .update({ 
+          notes: currentNotes, 
+          updated_at: new Date() 
+        })
+        .eq('id', propertyId)
+        .select();
+
+      if (error) throw error;
+      return data[0];
+    } catch (error) {
+      console.error('Error deleting note:', error);
+      return null;
+    }
+  },
+
   // Add a single note to a property (helper method)
   async addNote(propertyId, noteText, currentUser) {
     try {

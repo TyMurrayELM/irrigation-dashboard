@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
-import { MessageSquare, Send, User, Calendar } from 'lucide-react';
+import { MessageSquare, Send, User, Calendar, Edit2, Trash2, X, Save } from 'lucide-react';
 
-function NotesSection({ notes = [], onAddNote, currentUser }) {
+function NotesSection({ notes = [], onAddNote, onUpdateNote, onDeleteNote, currentUser }) {
   const [newNote, setNewNote] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [editingNoteIndex, setEditingNoteIndex] = useState(null);
+  const [editingNoteText, setEditingNoteText] = useState('');
 
   const handleSubmit = () => {
     if (newNote.trim()) {
@@ -15,6 +17,36 @@ function NotesSection({ notes = [], onAddNote, currentUser }) {
       });
       setNewNote('');
       setIsAdding(false);
+    }
+  };
+
+  const handleEditStart = (index, text) => {
+    setEditingNoteIndex(index);
+    setEditingNoteText(text);
+    setIsAdding(false);
+  };
+
+  const handleEditSave = (index) => {
+    if (editingNoteText.trim()) {
+      onUpdateNote(index, {
+        ...notes[index],
+        text: editingNoteText.trim(),
+        editedAt: new Date().toISOString(),
+        editedBy: currentUser.name
+      });
+      setEditingNoteIndex(null);
+      setEditingNoteText('');
+    }
+  };
+
+  const handleEditCancel = () => {
+    setEditingNoteIndex(null);
+    setEditingNoteText('');
+  };
+
+  const handleDelete = (index) => {
+    if (window.confirm('Are you sure you want to delete this note?')) {
+      onDeleteNote(index);
     }
   };
 
@@ -39,6 +71,13 @@ function NotesSection({ notes = [], onAddNote, currentUser }) {
         year: date.getFullYear() !== now.getFullYear() ? 'numeric' : undefined
       });
     }
+  };
+
+  // Check if user can edit/delete a note
+  const canModifyNote = (note) => {
+    if (!currentUser) return false;
+    // User can modify their own notes or if they're an admin
+    return note.userId === currentUser.id || currentUser.isAdmin;
   };
 
   // Sort notes by timestamp, newest first
@@ -88,7 +127,10 @@ function NotesSection({ notes = [], onAddNote, currentUser }) {
             </div>
           ) : (
             <button
-              onClick={() => setIsAdding(true)}
+              onClick={() => {
+                setIsAdding(true);
+                setEditingNoteIndex(null);
+              }}
               className="w-full sm:w-auto px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors min-h-[40px]"
             >
               + Add Note
@@ -106,21 +148,91 @@ function NotesSection({ notes = [], onAddNote, currentUser }) {
         {sortedNotes.length === 0 ? (
           <p className="text-gray-500 text-sm py-4 text-center">No notes added yet</p>
         ) : (
-          sortedNotes.map((note, index) => (
-            <div key={index} className="border-l-2 border-gray-200 pl-4 py-2 hover:border-blue-400 transition-colors">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1">
-                <div className="flex items-center gap-1 text-sm font-medium text-gray-900">
-                  <User className="w-3 h-3" />
-                  {note.user}
-                </div>
-                <div className="flex items-center gap-1 text-xs text-gray-500">
-                  <Calendar className="w-3 h-3" />
-                  {formatTimestamp(note.timestamp)}
-                </div>
+          sortedNotes.map((note, index) => {
+            const actualIndex = notes.indexOf(note); // Get the actual index in the original array
+            const isEditing = editingNoteIndex === actualIndex;
+            const canModify = canModifyNote(note);
+
+            return (
+              <div 
+                key={index} 
+                className={`border-l-2 pl-4 py-2 transition-colors ${
+                  isEditing ? 'border-blue-400 bg-blue-50' : 'border-gray-200 hover:border-blue-400'
+                }`}
+              >
+                {isEditing ? (
+                  // Edit mode
+                  <div className="space-y-2">
+                    <textarea
+                      value={editingNoteText}
+                      onChange={(e) => setEditingNoteText(e.target.value)}
+                      className="w-full p-2 border rounded focus:outline-none focus:ring-2 focus:ring-blue-400 text-sm"
+                      autoFocus
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => handleEditSave(actualIndex)}
+                        disabled={!editingNoteText.trim()}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed"
+                      >
+                        <Save className="w-3 h-3" />
+                        Save
+                      </button>
+                      <button
+                        onClick={handleEditCancel}
+                        className="flex items-center gap-1 px-3 py-1.5 bg-gray-200 text-gray-700 rounded text-sm hover:bg-gray-300"
+                      >
+                        <X className="w-3 h-3" />
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  // View mode
+                  <>
+                    <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
+                      <div className="flex-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-3 mb-1">
+                          <div className="flex items-center gap-1 text-sm font-medium text-gray-900">
+                            <User className="w-3 h-3" />
+                            {note.user}
+                          </div>
+                          <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <Calendar className="w-3 h-3" />
+                            {formatTimestamp(note.timestamp)}
+                          </div>
+                          {note.editedAt && (
+                            <div className="text-xs text-gray-400 italic">
+                              (edited {formatTimestamp(note.editedAt)}{note.editedBy && ` by ${note.editedBy}`})
+                            </div>
+                          )}
+                        </div>
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.text}</p>
+                      </div>
+                      {canModify && (
+                        <div className="flex gap-1 flex-shrink-0">
+                          <button
+                            onClick={() => handleEditStart(actualIndex, note.text)}
+                            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                            title="Edit note"
+                          >
+                            <Edit2 className="w-3 h-3" />
+                          </button>
+                          <button
+                            onClick={() => handleDelete(actualIndex)}
+                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                            title="Delete note"
+                          >
+                            <Trash2 className="w-3 h-3" />
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
               </div>
-              <p className="text-sm text-gray-700 whitespace-pre-wrap">{note.text}</p>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>
