@@ -1,7 +1,7 @@
 import { supabase } from '../utils/supabase';
 
 export const dataService = {
-  // Fetch all properties with their zones
+  // Fetch all properties with their zones and controllers
   async getProperties() {
     try {
       // Get properties
@@ -28,6 +28,15 @@ export const dataService = {
 
       if (historyError) throw historyError;
 
+      // Get controllers for all properties
+      const { data: controllers, error: controllersError } = await supabase
+        .from('property_controllers')
+        .select('*')
+        .order('controller_type');
+
+      // Handle if controllers table doesn't exist yet
+      const propertyControllers = controllers || [];
+
       // Combine data
       const propertiesWithZones = properties.map(property => {
         const propertyZones = zones.filter(zone => zone.property_id === property.id);
@@ -46,6 +55,9 @@ export const dataService = {
           };
         });
 
+        // Add controllers to property
+        const propertyControllersList = propertyControllers.filter(c => c.property_id === property.id);
+
         // Convert notes to array format if it's still a string (for backward compatibility)
         let notesArray = property.notes;
         if (typeof property.notes === 'string' && property.notes) {
@@ -62,7 +74,8 @@ export const dataService = {
         return {
           ...property,
           notes: notesArray,
-          zones: zonesWithHistory
+          zones: zonesWithHistory,
+          controllers: propertyControllersList
         };
       });
 
@@ -87,6 +100,104 @@ export const dataService = {
     } catch (error) {
       console.error('Error updating property:', error);
       return null;
+    }
+  },
+
+  // Add controller to property
+  async addController(propertyId, controllerData) {
+    try {
+      const { data, error } = await supabase
+        .from('property_controllers')
+        .insert({
+          property_id: propertyId,
+          ...controllerData,
+          created_at: new Date(),
+          updated_at: new Date()
+        })
+        .select();
+
+      if (error) throw error;
+      return data[0];
+    } catch (error) {
+      console.error('Error adding controller:', error);
+      return null;
+    }
+  },
+
+  // Update controller
+  async updateController(controllerId, updates) {
+    try {
+      const { data, error } = await supabase
+        .from('property_controllers')
+        .update({
+          ...updates,
+          updated_at: new Date()
+        })
+        .eq('id', controllerId)
+        .select();
+
+      if (error) throw error;
+      return data[0];
+    } catch (error) {
+      console.error('Error updating controller:', error);
+      return null;
+    }
+  },
+
+  // Delete controller
+  async deleteController(controllerId) {
+    try {
+      const { error } = await supabase
+        .from('property_controllers')
+        .delete()
+        .eq('id', controllerId);
+
+      if (error) throw error;
+      return true;
+    } catch (error) {
+      console.error('Error deleting controller:', error);
+      return false;
+    }
+  },
+
+  // Migrate existing timer_type to controllers (one-time migration)
+  async migrateTimerTypes() {
+    try {
+      const { data: properties, error } = await supabase
+        .from('properties')
+        .select('id, timer_type')
+        .not('timer_type', 'is', null);
+
+      if (error) throw error;
+
+      for (const property of properties) {
+        if (property.timer_type) {
+          // Check if already migrated
+          const { data: existing } = await supabase
+            .from('property_controllers')
+            .select('id')
+            .eq('property_id', property.id)
+            .eq('controller_type', property.timer_type)
+            .single();
+
+          if (!existing) {
+            await supabase
+              .from('property_controllers')
+              .insert({
+                property_id: property.id,
+                controller_type: property.timer_type,
+                controller_location: 'Main',
+                created_at: new Date(),
+                updated_at: new Date()
+              });
+          }
+        }
+      }
+
+      return { success: true };
+    } catch (error) {
+      console.error('Error migrating timer types:', error);
+      return { success: false, error };
     }
   },
 

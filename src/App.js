@@ -50,6 +50,10 @@ function App() {
         loadProperties();
         // Log user activity
         logUserActivity(user);
+        // One-time migration of timer_type to controllers (only for admins)
+        if (user.isAdmin) {
+          migrateTimerTypes();
+        }
       }
     });
 
@@ -135,6 +139,15 @@ function App() {
     }
   };
 
+  const migrateTimerTypes = async () => {
+    // One-time migration of existing timer_type values to controllers
+    try {
+      await dataService.migrateTimerTypes();
+    } catch (error) {
+      console.error('Migration error (can be ignored if already done):', error);
+    }
+  };
+
   const loadProperties = async () => {
     setLoading(true);
     const data = await dataService.getProperties();
@@ -208,6 +221,28 @@ function App() {
     if (result) {
       await loadProperties();
       setAddingZone(false);
+    }
+  };
+
+  // Controller management functions
+  const handleAddController = async (propertyId, controllerData) => {
+    const result = await dataService.addController(propertyId, controllerData);
+    if (result) {
+      await loadProperties();
+    }
+  };
+
+  const handleUpdateController = async (controllerId, updates) => {
+    const result = await dataService.updateController(controllerId, updates);
+    if (result) {
+      await loadProperties();
+    }
+  };
+
+  const handleDeleteController = async (controllerId) => {
+    const result = await dataService.deleteController(controllerId);
+    if (result) {
+      await loadProperties();
     }
   };
 
@@ -375,6 +410,9 @@ function App() {
                       currentUser={currentUser}
                       isEditing={editingProperty}
                       setIsEditing={setEditingProperty}
+                      onAddController={handleAddController}
+                      onUpdateController={handleUpdateController}
+                      onDeleteController={handleDeleteController}
                     />
                     <ZoneList
                       property={selectedProperty}

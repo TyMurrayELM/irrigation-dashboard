@@ -1,9 +1,20 @@
 import React from 'react';
-import { Edit2 } from 'lucide-react';
+import { Edit2, Settings } from 'lucide-react';
 import { getStatusIcon, getStatusColor } from '../../utils/helpers';
 import PropertyEditForm from './PropertyEditForm';
+import PropertyControllers from './PropertyControllers';
 
-function PropertyDetails({ property, onEdit, onUpdate, currentUser, isEditing, setIsEditing }) {
+function PropertyDetails({ 
+  property, 
+  onEdit, 
+  onUpdate, 
+  currentUser, 
+  isEditing, 
+  setIsEditing,
+  onAddController,
+  onUpdateController,
+  onDeleteController 
+}) {
   const StatusIcon = getStatusIcon(property.days_since_irrigation_invoice);
   const VisitIcon = getStatusIcon(property.days_since_irrigation_visit);
 
@@ -44,7 +55,7 @@ function PropertyDetails({ property, onEdit, onUpdate, currentUser, isEditing, s
         </button>
       </div>
       
-      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+      <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm mb-4">
         <div className="flex items-center gap-1">
           <span className="text-gray-500">Region:</span>
           <span className="font-medium">{property.region}</span>
@@ -65,13 +76,21 @@ function PropertyDetails({ property, onEdit, onUpdate, currentUser, isEditing, s
           <span className="text-gray-500">Company:</span>
           <span className="font-medium">{property.company}</span>
         </div>
-        <div className="flex items-center gap-1">
-          <span className="text-gray-500">Timer:</span>
-          <span className="font-medium text-blue-600">{property.timer_type || 'Not specified'}</span>
-        </div>
+      </div>
+
+      {/* Controllers Section */}
+      <div className="border-t border-b py-4 my-4">
+        <PropertyControllers
+          property={property}
+          controllers={property.controllers || []}
+          onAddController={onAddController}
+          onUpdateController={onUpdateController}
+          onDeleteController={onDeleteController}
+          currentUser={currentUser}
+        />
       </div>
       
-      <div className="border-t mt-4 pt-4 flex gap-6">
+      <div className="flex gap-6">
         <div className="flex items-center gap-2">
           <StatusIcon className={`w-4 h-4 ${getStatusColor(property.days_since_irrigation_invoice)}`} />
           <div>
