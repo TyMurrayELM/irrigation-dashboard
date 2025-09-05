@@ -209,7 +209,7 @@ function App() {
 
   const handleDeleteZone = async (propertyId, zoneId) => {
     if (window.confirm('Are you sure you want to delete this zone?')) {
-      const result = await dataService.deleteZone(zoneId);
+      const result = await dataService.deleteZone(zoneId, currentUser);
       if (result) {
         await loadProperties();
       }

@@ -1,4 +1,5 @@
 import { supabase } from '../utils/supabase';
+import { webhookService } from './webhookService';
 
 export const dataService = {
   // Fetch all properties with their zones and controllers
@@ -86,7 +87,7 @@ export const dataService = {
     }
   },
 
-  // Update property details
+  // Update property details (NO WEBHOOK - only for zones and notes)
   async updateProperty(propertyId, updates) {
     try {
       const { data, error } = await supabase
@@ -201,9 +202,18 @@ export const dataService = {
     }
   },
 
-  // Update zone
+  // Update zone with webhook notification
   async updateZone(zoneId, updates, changeNote, currentUser) {
     try {
+      // First, get the zone's property information for the webhook
+      const { data: zoneInfo, error: fetchError } = await supabase
+        .from('zones')
+        .select('*, properties(*)')
+        .eq('id', zoneId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
       // Update the zone
       const { data: zoneData, error: zoneError } = await supabase
         .from('zones')
@@ -230,6 +240,15 @@ export const dataService = {
 
       if (historyError) throw historyError;
 
+      // Send webhook notification
+      await webhookService.notifyZoneChange(
+        zoneInfo.properties,
+        zoneData[0],
+        updates,
+        currentUser,
+        'update'
+      );
+
       return zoneData[0];
     } catch (error) {
       console.error('Error updating zone:', error);
@@ -237,9 +256,18 @@ export const dataService = {
     }
   },
 
-  // Add new zone
+  // Add new zone with webhook notification
   async addZone(propertyId, zoneData, currentUser) {
     try {
+      // Get property information for webhook
+      const { data: property, error: propError } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', propertyId)
+        .single();
+
+      if (propError) throw propError;
+
       const { data, error } = await supabase
         .from('zones')
         .insert({
@@ -251,6 +279,16 @@ export const dataService = {
         .select();
 
       if (error) throw error;
+
+      // Send webhook notification
+      await webhookService.notifyZoneChange(
+        property,
+        data[0],
+        zoneData,
+        currentUser,
+        'create'
+      );
+
       return data[0];
     } catch (error) {
       console.error('Error adding zone:', error);
@@ -258,15 +296,34 @@ export const dataService = {
     }
   },
 
-  // Delete zone
-  async deleteZone(zoneId) {
+  // Delete zone with webhook notification
+  async deleteZone(zoneId, currentUser) {
     try {
+      // Get zone and property info before deletion
+      const { data: zoneInfo, error: fetchError } = await supabase
+        .from('zones')
+        .select('*, properties(*)')
+        .eq('id', zoneId)
+        .single();
+
+      if (fetchError) throw fetchError;
+
       const { error } = await supabase
         .from('zones')
         .delete()
         .eq('id', zoneId);
 
       if (error) throw error;
+
+      // Send webhook notification
+      await webhookService.notifyZoneChange(
+        zoneInfo.properties,
+        zoneInfo,
+        { deleted: true },
+        currentUser,
+        'delete'
+      );
+
       return true;
     } catch (error) {
       console.error('Error deleting zone:', error);
@@ -274,11 +331,24 @@ export const dataService = {
     }
   },
 
-  // Update notes - now handles array of notes
+  // Update notes with webhook notification
   async updateNotes(propertyId, notes) {
     try {
+      // Get property info for webhook
+      const { data: property, error: propError } = await supabase
+        .from('properties')
+        .select('*')
+        .eq('id', propertyId)
+        .single();
+
+      if (propError) throw propError;
+
       // Ensure notes is always an array
       const notesArray = Array.isArray(notes) ? notes : [];
+      
+      // Check if a new note was added (compare lengths)
+      const existingNotesLength = Array.isArray(property.notes) ? property.notes.length : 0;
+      const newNotesLength = notesArray.length;
       
       const { data, error } = await supabase
         .from('properties')
@@ -290,6 +360,19 @@ export const dataService = {
         .select();
 
       if (error) throw error;
+
+      // If a new note was added, send webhook
+      if (newNotesLength > existingNotesLength) {
+        const newNote = notesArray[notesArray.length - 1];
+        const user = {
+          id: newNote.userId,
+          name: newNote.user,
+          email: 'unknown@example.com' // You might want to store email in notes
+        };
+        
+        await webhookService.notifyNoteAdded(property, newNote, user);
+      }
+
       return data[0];
     } catch (error) {
       console.error('Error updating notes:', error);
@@ -373,13 +456,13 @@ export const dataService = {
     }
   },
 
-  // Add a single note to a property (helper method)
+  // Add a single note to a property with webhook (helper method)
   async addNote(propertyId, noteText, currentUser) {
     try {
       // First get the current property to access existing notes
       const { data: property, error: fetchError } = await supabase
         .from('properties')
-        .select('notes')
+        .select('*')
         .eq('id', propertyId)
         .single();
 
@@ -422,6 +505,10 @@ export const dataService = {
         .select();
 
       if (error) throw error;
+
+      // Send webhook notification for new note
+      await webhookService.notifyNoteAdded(property, newNote, currentUser);
+
       return data[0];
     } catch (error) {
       console.error('Error adding note:', error);
