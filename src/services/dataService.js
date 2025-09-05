@@ -456,66 +456,6 @@ export const dataService = {
     }
   },
 
-  // Add a single note to a property with webhook (helper method)
-  async addNote(propertyId, noteText, currentUser) {
-    try {
-      // First get the current property to access existing notes
-      const { data: property, error: fetchError } = await supabase
-        .from('properties')
-        .select('*')
-        .eq('id', propertyId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
-      // Handle existing notes
-      let existingNotes = property.notes || [];
-      
-      // Convert old string format if needed
-      if (typeof existingNotes === 'string' && existingNotes) {
-        existingNotes = [{
-          text: existingNotes,
-          user: 'System',
-          timestamp: new Date().toISOString(),
-          userId: 'system'
-        }];
-      } else if (!Array.isArray(existingNotes)) {
-        existingNotes = [];
-      }
-
-      // Create the new note
-      const newNote = {
-        text: noteText,
-        user: currentUser?.name || 'Unknown User',
-        timestamp: new Date().toISOString(),
-        userId: currentUser?.id || 'unknown'
-      };
-
-      // Combine notes
-      const updatedNotes = [...existingNotes, newNote];
-
-      // Update the property
-      const { data, error } = await supabase
-        .from('properties')
-        .update({ 
-          notes: updatedNotes, 
-          updated_at: new Date() 
-        })
-        .eq('id', propertyId)
-        .select();
-
-      if (error) throw error;
-
-      // Send webhook notification for new note
-      await webhookService.notifyNoteAdded(property, newNote, currentUser);
-
-      return data[0];
-    } catch (error) {
-      console.error('Error adding note:', error);
-      return null;
-    }
-  },
-
   // Bulk update properties from CSV
   async bulkUpdateProperties(properties) {
     try {
