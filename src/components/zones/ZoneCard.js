@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Clock, Calendar, User, History, Edit2, Trash2, ChevronUp, Settings } from 'lucide-react';
+import { Clock, Calendar, User, History, Edit2, Trash2, ChevronUp, Settings, Play } from 'lucide-react';
 import { getZoneIcon } from '../../utils/icons';
 import { formatFrequency } from '../../utils/helpers';
 import ZoneForm from './ZoneForm';
@@ -18,6 +18,16 @@ function ZoneCard({
 
   // Find the controller for this zone
   const assignedController = controllers.find(c => c.id === zone.controller_id);
+
+  // Format time for display (convert 24hr to 12hr format)
+  const formatTime = (timeString) => {
+    if (!timeString) return null;
+    const [hours, minutes] = timeString.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${displayHour}:${minutes} ${ampm}`;
+  };
 
   if (isEditing) {
     return (
@@ -59,7 +69,15 @@ function ZoneCard({
             </div>
             
             {/* Zone Details - Stack on mobile, inline on desktop */}
-            <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-6 text-sm text-gray-600 lg:ml-9">
+            <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 text-sm text-gray-600 lg:ml-9">
+              {zone.start_time && (
+                <div className="flex items-center gap-1 whitespace-nowrap">
+                  <Play className="w-4 h-4 text-green-600" />
+                  <span className="font-medium text-green-700">
+                    {formatTime(zone.start_time)}
+                  </span>
+                </div>
+              )}
               <div className="flex items-center gap-1 whitespace-nowrap">
                 <Clock className="w-4 h-4 text-gray-500" />
                 <span>{zone.duration} min</span>
@@ -72,9 +90,13 @@ function ZoneCard({
               </div>
               <div className="flex items-center gap-1 flex-wrap">
                 <User className="w-4 h-4 text-gray-500 flex-shrink-0" />
-                <span className="truncate">{zone.last_adjusted_by}</span>
-                <span className="text-gray-400">•</span>
-                <span className="whitespace-nowrap">{zone.last_adjusted_at}</span>
+                <span className="truncate">{zone.last_adjusted_by || 'Not set'}</span>
+                {zone.last_adjusted_at && (
+                  <>
+                    <span className="text-gray-400">•</span>
+                    <span className="whitespace-nowrap">{zone.last_adjusted_at}</span>
+                  </>
+                )}
               </div>
             </div>
           </div>

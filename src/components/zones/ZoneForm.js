@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Save, X, Settings } from 'lucide-react';
+import { Save, X, Settings, Clock } from 'lucide-react';
 import { frequencyOptions, weekDays } from '../../data/constants';
 
 function ZoneForm({ zone, onSave, onCancel, controllers = [] }) {
@@ -9,7 +9,8 @@ function ZoneForm({ zone, onSave, onCancel, controllers = [] }) {
     duration: zone?.duration || 15,
     frequency: zone?.frequency || 'daily',
     days: zone?.days || [],
-    controller_id: zone?.controller_id || null
+    controller_id: zone?.controller_id || null,
+    start_time: zone?.start_time || ''
   });
   const [changeNote, setChangeNote] = useState('');
 
@@ -86,28 +87,45 @@ function ZoneForm({ zone, onSave, onCancel, controllers = [] }) {
         </div>
       </div>
 
-      {/* Controller Selection */}
-      {controllers.length > 0 && (
+      {/* Second row with Start Time and Controller */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
         <div>
           <label className="text-xs text-gray-600 block mb-1">
-            <Settings className="w-3 h-3 inline mr-1" />
-            Assign to Controller
+            <Clock className="w-3 h-3 inline mr-1" />
+            Start Time
           </label>
-          <select
-            value={formData.controller_id || ''}
-            onChange={(e) => setFormData({ ...formData, controller_id: e.target.value ? parseInt(e.target.value) : null })}
-            className="w-full sm:max-w-xs px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
-          >
-            <option value="">No Controller Assigned</option>
-            {controllers.map(controller => (
-              <option key={controller.id} value={controller.id}>
-                {controller.controller_type}
-                {controller.controller_location && ` - ${controller.controller_location}`}
-              </option>
-            ))}
-          </select>
+          <input
+            type="time"
+            value={formData.start_time || ''}
+            onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+            placeholder="HH:MM"
+          />
         </div>
-      )}
+
+        {/* Controller Selection */}
+        {controllers.length > 0 && (
+          <div className="sm:col-span-2 lg:col-span-2">
+            <label className="text-xs text-gray-600 block mb-1">
+              <Settings className="w-3 h-3 inline mr-1" />
+              Assign to Controller
+            </label>
+            <select
+              value={formData.controller_id || ''}
+              onChange={(e) => setFormData({ ...formData, controller_id: e.target.value ? parseInt(e.target.value) : null })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+            >
+              <option value="">No Controller Assigned</option>
+              {controllers.map(controller => (
+                <option key={controller.id} value={controller.id}>
+                  {controller.controller_type}
+                  {controller.controller_location && ` - ${controller.controller_location}`}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
+      </div>
       
       {formData.frequency === 'custom-days' && (
         <div>

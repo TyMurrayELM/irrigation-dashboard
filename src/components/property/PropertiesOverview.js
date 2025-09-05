@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, AlertCircle, CheckCircle, Settings, ChevronDown, ChevronUp, Droplets, TreePine, User, StickyNote } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, CheckCircle, Settings, ChevronDown, ChevronUp, Droplets, TreePine, User, StickyNote, Play } from 'lucide-react';
 
 function PropertiesOverview({ properties, onSelectProperty }) {
   const [expandedProperties, setExpandedProperties] = useState(new Set());
@@ -36,6 +36,22 @@ function PropertiesOverview({ properties, onSelectProperty }) {
     // Get unique schedules
     const uniqueSchedules = [...new Set(schedules)];
     return uniqueSchedules.join(' | ');
+  };
+
+  const getStartTimes = (zones) => {
+    if (!zones || zones.length === 0) return null;
+    
+    const times = zones
+      .filter(zone => zone.start_time)
+      .map(zone => {
+        const [hours, minutes] = zone.start_time.split(':');
+        const hour = parseInt(hours);
+        const ampm = hour >= 12 ? 'PM' : 'AM';
+        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+        return `${displayHour}:${minutes}${ampm}`;
+      });
+    
+    return times.length > 0 ? times.join(', ') : null;
   };
 
   const getMostRecentAdjuster = (zones) => {
@@ -84,6 +100,15 @@ function PropertiesOverview({ properties, onSelectProperty }) {
       return days.join(', ');
     }
     return frequency?.replace(/-/g, ' ') || 'Not set';
+  };
+
+  const formatTime = (timeString) => {
+    if (!timeString) return null;
+    const [hours, minutes] = timeString.split(':');
+    const hour = parseInt(hours);
+    const ampm = hour >= 12 ? 'PM' : 'AM';
+    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+    return `${displayHour}:${minutes} ${ampm}`;
   };
 
   // Get the most recent note from property or zones
@@ -187,11 +212,12 @@ function PropertiesOverview({ properties, onSelectProperty }) {
     return tooltip;
   };
 
-  // Mobile Card Component
+  // Mobile Card Component for User Activity
   const PropertyCard = ({ property }) => {
     const recentNote = getMostRecentNote(property);
     const hasNote = recentNote !== null;
     const isExpanded = expandedProperties.has(property.id);
+    const startTimes = getStartTimes(property.zones);
     
     return (
       <div className={`bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden ${hasNote ? 'ring-2 ring-yellow-400' : ''}`}>
@@ -266,6 +292,13 @@ function PropertiesOverview({ properties, onSelectProperty }) {
             <p className="text-gray-500 text-sm">Schedule</p>
             <p className="font-medium text-sm">{getScheduleSummary(property.zones)}</p>
           </div>
+
+          {startTimes && (
+            <div>
+              <p className="text-gray-500 text-sm">Start Times</p>
+              <p className="font-medium text-sm text-green-700">{startTimes}</p>
+            </div>
+          )}
           
           {property.zones && property.zones.length > 0 && (
             <button
@@ -295,6 +328,12 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-3 text-xs text-gray-600">
+                    {zone.start_time && (
+                      <span className="flex items-center gap-1 text-green-700">
+                        <Play className="w-3 h-3" />
+                        {formatTime(zone.start_time)}
+                      </span>
+                    )}
                     <span className="flex items-center gap-1">
                       <Clock className="w-3 h-3" />
                       {zone.duration} min
@@ -358,6 +397,7 @@ function PropertiesOverview({ properties, onSelectProperty }) {
               <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 bg-gray-50 border-b border-gray-200">Timer</th>
               <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16 bg-gray-50 border-b border-gray-200">Zones</th>
               <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50 border-b border-gray-200">Total Min</th>
+              <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px] bg-gray-50 border-b border-gray-200">Start Times</th>
               <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px] bg-gray-50 border-b border-gray-200">Schedule</th>
               <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50 border-b border-gray-200">Days Since<br/>Invoice</th>
               <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50 border-b border-gray-200">Days Since<br/>Visit</th>
@@ -368,7 +408,7 @@ function PropertiesOverview({ properties, onSelectProperty }) {
           <tbody className="bg-white divide-y divide-gray-200">
             {sortedProperties.length === 0 ? (
               <tr>
-                <td colSpan="10" className="px-4 py-8 text-center text-gray-500">
+                <td colSpan="11" className="px-4 py-8 text-center text-gray-500">
                   No properties found matching the selected filters
                 </td>
               </tr>
@@ -376,6 +416,7 @@ function PropertiesOverview({ properties, onSelectProperty }) {
               sortedProperties.map((property) => {
                 const recentNote = getMostRecentNote(property);
                 const hasNote = recentNote !== null;
+                const startTimes = getStartTimes(property.zones);
                 
                 return (
                   <React.Fragment key={property.id}>
@@ -429,6 +470,16 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600 text-center font-medium w-20">
                         {getTotalDuration(property.zones)}
+                      </td>
+                      <td className="px-4 py-3 text-sm min-w-[120px]">
+                        {startTimes ? (
+                          <div className="flex items-center gap-1 text-green-700">
+                            <Play className="w-3 h-3" />
+                            <span className="font-medium">{startTimes}</span>
+                          </div>
+                        ) : (
+                          <span className="text-gray-400">Not set</span>
+                        )}
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600 min-w-[150px]">
                         <span className="block">
@@ -485,7 +536,7 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                     {/* Expanded zones section */}
                     {expandedProperties.has(property.id) && property.zones && property.zones.length > 0 && (
                       <tr>
-                        <td colSpan="10" className="px-4 py-3 bg-gray-50">
+                        <td colSpan="11" className="px-4 py-3 bg-gray-50">
                           <div className="ml-8">
                             <h4 className="text-sm font-semibold text-gray-700 mb-2">Zones:</h4>
                             <div className="space-y-2">
@@ -498,6 +549,12 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                                       {zone.type}
                                     </span>
                                   </div>
+                                  {zone.start_time && (
+                                    <div className="flex items-center gap-1 text-green-700">
+                                      <Play className="w-3 h-3" />
+                                      <span className="font-medium text-xs">{formatTime(zone.start_time)}</span>
+                                    </div>
+                                  )}
                                   <div className="flex items-center gap-1 text-gray-600">
                                     <Clock className="w-3 h-3" />
                                     <span>{zone.duration} min</span>
