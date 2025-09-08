@@ -164,6 +164,14 @@ export const dataService = {
   // Migrate existing timer_type to controllers (one-time migration)
   async migrateTimerTypes() {
     try {
+      // First check if migration has already been done
+      const { data: existingControllers } = await supabase
+        .from('property_controllers')
+        .select('property_id');
+      
+      const migratedPropertyIds = new Set(existingControllers?.map(c => c.property_id) || []);
+      
+      // Get only properties that haven't been migrated
       const { data: properties, error } = await supabase
         .from('properties')
         .select('id, timer_type')
@@ -171,18 +179,25 @@ export const dataService = {
 
       if (error) throw error;
 
+      let migrated = 0;
       for (const property of properties) {
+        // Skip if already has controllers
+        if (migratedPropertyIds.has(property.id)) {
+          console.log(`Property ${property.id} already has controllers, skipping`);
+          continue;
+        }
+        
         if (property.timer_type) {
-          // Check if already migrated
+          // Double-check if controller exists for this property
           const { data: existing } = await supabase
             .from('property_controllers')
             .select('id')
             .eq('property_id', property.id)
-            .eq('controller_type', property.timer_type)
-            .single();
+            .limit(1)
+            .maybeSingle(); // Use maybeSingle instead of single to avoid errors
 
           if (!existing) {
-            await supabase
+            const { error: insertError } = await supabase
               .from('property_controllers')
               .insert({
                 property_id: property.id,
@@ -191,11 +206,17 @@ export const dataService = {
                 created_at: new Date(),
                 updated_at: new Date()
               });
+            
+            if (!insertError) {
+              migrated++;
+              console.log(`Migrated controller for property ${property.id}`);
+            }
           }
         }
       }
 
-      return { success: true };
+      console.log(`Migration complete: ${migrated} controllers created`);
+      return { success: true, migrated };
     } catch (error) {
       console.error('Error migrating timer types:', error);
       return { success: false, error };

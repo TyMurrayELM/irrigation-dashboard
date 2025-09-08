@@ -5,6 +5,7 @@ import { timerTypes } from '../../data/constants';
 function PropertyControllers({ property, controllers, onAddController, onUpdateController, onDeleteController, currentUser }) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
+  const [isSubmitting, setIsSubmitting] = useState(false); // Add loading state
   const [formData, setFormData] = useState({
     controller_type: '',
     controller_location: '',
@@ -23,20 +24,29 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
     setCustomTimerType('');
     setIsAdding(false);
     setEditingId(null);
+    setIsSubmitting(false);
   };
 
   const handleAdd = async () => {
+    if (isSubmitting) return; // Prevent double submission
+    
     // Use custom timer type if "Other" is selected
     const finalControllerType = formData.controller_type === 'Other' 
       ? customTimerType 
       : formData.controller_type;
     
     if (finalControllerType) {
-      await onAddController(property.id, {
-        ...formData,
-        controller_type: finalControllerType
-      });
-      resetForm();
+      setIsSubmitting(true);
+      try {
+        await onAddController(property.id, {
+          ...formData,
+          controller_type: finalControllerType
+        });
+        resetForm();
+      } catch (error) {
+        console.error('Error adding controller:', error);
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -64,17 +74,25 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
   };
 
   const handleUpdate = async () => {
+    if (isSubmitting) return; // Prevent double submission
+    
     // Use custom timer type if "Other" is selected
     const finalControllerType = formData.controller_type === 'Other' 
       ? customTimerType 
       : formData.controller_type;
     
     if (finalControllerType) {
-      await onUpdateController(editingId, {
-        ...formData,
-        controller_type: finalControllerType
-      });
-      resetForm();
+      setIsSubmitting(true);
+      try {
+        await onUpdateController(editingId, {
+          ...formData,
+          controller_type: finalControllerType
+        });
+        resetForm();
+      } catch (error) {
+        console.error('Error updating controller:', error);
+        setIsSubmitting(false);
+      }
     }
   };
 
@@ -99,38 +117,20 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
   };
 
   const ControllerForm = ({ isEdit = false }) => {
-    // Use local state for form to prevent re-renders affecting parent
-    const [localFormData, setLocalFormData] = useState(formData);
-    const [localCustomTimerType, setLocalCustomTimerType] = useState(customTimerType);
-    const showCustomInput = localFormData.controller_type === 'Other';
+    const showCustomInput = formData.controller_type === 'Other';
 
-    const handleLocalSubmit = () => {
+    const handleLocalSubmit = async () => {
       // Validate that if "Other" is selected, custom type is provided
-      if (localFormData.controller_type === 'Other' && !localCustomTimerType.trim()) {
+      if (formData.controller_type === 'Other' && !customTimerType.trim()) {
         alert('Please enter a custom controller type');
         return;
       }
       
-      setFormData(localFormData);
-      setCustomTimerType(localCustomTimerType);
-      
-      // Need to handle the submit with the correct data
-      const finalControllerType = localFormData.controller_type === 'Other' 
-        ? localCustomTimerType 
-        : localFormData.controller_type;
-      
-      if (finalControllerType) {
-        if (isEdit) {
-          onUpdateController(editingId, {
-            ...localFormData,
-            controller_type: finalControllerType
-          }).then(() => resetForm());
-        } else {
-          onAddController(property.id, {
-            ...localFormData,
-            controller_type: finalControllerType
-          }).then(() => resetForm());
-        }
+      // Call the appropriate function and wait for completion
+      if (isEdit) {
+        await handleUpdate();
+      } else {
+        await handleAdd();
       }
     };
 
@@ -140,15 +140,16 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
           <div>
             <label className="text-xs text-gray-600 block mb-1">Controller Type *</label>
             <select
-              value={localFormData.controller_type}
+              value={formData.controller_type}
               onChange={(e) => {
-                setLocalFormData({ ...localFormData, controller_type: e.target.value });
+                setFormData({ ...formData, controller_type: e.target.value });
                 // Clear custom type if switching away from "Other"
                 if (e.target.value !== 'Other') {
-                  setLocalCustomTimerType('');
+                  setCustomTimerType('');
                 }
               }}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+              disabled={isSubmitting}
             >
               <option value="">Select Controller Type</option>
               {timerTypes.map(type => (
@@ -166,9 +167,10 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
               <input
                 type="text"
                 placeholder="Enter custom controller type"
-                value={localCustomTimerType}
-                onChange={(e) => setLocalCustomTimerType(e.target.value)}
+                value={customTimerType}
+                onChange={(e) => setCustomTimerType(e.target.value)}
                 className="w-full px-3 py-2 border-2 border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+                disabled={isSubmitting}
                 autoFocus
               />
             </div>
@@ -178,9 +180,10 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
               <input
                 type="text"
                 placeholder="e.g., Front yard, Back yard"
-                value={localFormData.controller_location}
-                onChange={(e) => setLocalFormData({ ...localFormData, controller_location: e.target.value })}
+                value={formData.controller_location}
+                onChange={(e) => setFormData({ ...formData, controller_location: e.target.value })}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+                disabled={isSubmitting}
               />
             </div>
           )}
@@ -194,9 +197,10 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
               <input
                 type="text"
                 placeholder="e.g., Front yard, Back yard"
-                value={localFormData.controller_location}
-                onChange={(e) => setLocalFormData({ ...localFormData, controller_location: e.target.value })}
+                value={formData.controller_location}
+                onChange={(e) => setFormData({ ...formData, controller_location: e.target.value })}
                 className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+                disabled={isSubmitting}
               />
             </div>
           )}
@@ -205,9 +209,10 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
             <input
               type="text"
               placeholder="Serial/Model number"
-              value={localFormData.serial_number}
-              onChange={(e) => setLocalFormData({ ...localFormData, serial_number: e.target.value })}
+              value={formData.serial_number}
+              onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+              disabled={isSubmitting}
             />
           </div>
           <div>
@@ -215,9 +220,10 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
             <input
               type="text"
               placeholder="Additional notes"
-              value={localFormData.notes}
-              onChange={(e) => setLocalFormData({ ...localFormData, notes: e.target.value })}
+              value={formData.notes}
+              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+              disabled={isSubmitting}
             />
           </div>
         </div>
@@ -234,15 +240,25 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
         <div className="flex flex-col sm:flex-row gap-2">
           <button
             onClick={handleLocalSubmit}
-            disabled={!localFormData.controller_type || (localFormData.controller_type === 'Other' && !localCustomTimerType.trim())}
+            disabled={!formData.controller_type || (formData.controller_type === 'Other' && !customTimerType.trim()) || isSubmitting}
             className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors min-h-[40px]"
           >
-            <Save className="w-4 h-4" />
-            {isEdit ? 'Update' : 'Add'} Controller
+            {isSubmitting ? (
+              <>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                Processing...
+              </>
+            ) : (
+              <>
+                <Save className="w-4 h-4" />
+                {isEdit ? 'Update' : 'Add'} Controller
+              </>
+            )}
           </button>
           <button
             onClick={resetForm}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors min-h-[40px]"
+            disabled={isSubmitting}
+            className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[40px]"
           >
             <X className="w-4 h-4" />
             Cancel

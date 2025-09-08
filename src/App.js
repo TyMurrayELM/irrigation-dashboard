@@ -51,8 +51,10 @@ function App() {
         // Log user activity
         logUserActivity(user);
         // One-time migration of timer_type to controllers (only for admins)
-        if (user.isAdmin) {
+        // Only run if not already run this session
+        if (user.isAdmin && !sessionStorage.getItem('migration_run')) {
           migrateTimerTypes();
+          sessionStorage.setItem('migration_run', 'true');
         }
       }
     });
