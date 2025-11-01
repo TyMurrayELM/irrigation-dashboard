@@ -41,17 +41,24 @@ function PropertiesOverview({ properties, onSelectProperty }) {
   const getStartTimes = (zones) => {
     if (!zones || zones.length === 0) return null;
     
-    const times = zones
-      .filter(zone => zone.start_time)
-      .map(zone => {
-        const [hours, minutes] = zone.start_time.split(':');
-        const hour = parseInt(hours);
-        const ampm = hour >= 12 ? 'PM' : 'AM';
-        const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-        return `${displayHour}:${minutes}${ampm}`;
-      });
+    // Collect all start times from all zones
+    const allTimes = [];
     
-    return times.length > 0 ? times.join(', ') : null;
+    zones.forEach(zone => {
+      if (zone.start_times && Array.isArray(zone.start_times) && zone.start_times.length > 0) {
+        zone.start_times.forEach(time => {
+          const [hours, minutes] = time.split(':');
+          const hour = parseInt(hours);
+          const ampm = hour >= 12 ? 'PM' : 'AM';
+          const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+          allTimes.push(`${displayHour}:${minutes}${ampm}`);
+        });
+      }
+    });
+    
+    // Return unique times, sorted
+    const uniqueTimes = [...new Set(allTimes)];
+    return uniqueTimes.length > 0 ? uniqueTimes.join(', ') : null;
   };
 
   const getMostRecentAdjuster = (zones) => {
@@ -109,6 +116,14 @@ function PropertiesOverview({ properties, onSelectProperty }) {
     const ampm = hour >= 12 ? 'PM' : 'AM';
     const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
     return `${displayHour}:${minutes} ${ampm}`;
+  };
+
+  const formatMultipleStartTimes = (startTimes) => {
+    if (!startTimes || !Array.isArray(startTimes) || startTimes.length === 0) {
+      return null;
+    }
+    
+    return startTimes.map(time => formatTime(time)).join(', ');
   };
 
   // Get the most recent note from property or zones
@@ -176,12 +191,11 @@ function PropertiesOverview({ properties, onSelectProperty }) {
     return null;
   };
 
-  // Check if property has recent notes (within last 14 days)
   const hasRecentNote = (property) => {
     return getMostRecentNote(property) !== null;
   };
 
-  // Sort properties: recent notes first, then by name
+  // Sort properties: those with recent notes first, then alphabetically
   const sortedProperties = [...properties].sort((a, b) => {
     const aHasRecentNote = hasRecentNote(a);
     const bHasRecentNote = hasRecentNote(b);
@@ -328,10 +342,10 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                     </span>
                   </div>
                   <div className="flex flex-wrap gap-3 text-xs text-gray-600">
-                    {zone.start_time && (
+                    {zone.start_times && zone.start_times.length > 0 && (
                       <span className="flex items-center gap-1 text-green-700">
                         <Play className="w-3 h-3" />
-                        {formatTime(zone.start_time)}
+                        {formatMultipleStartTimes(zone.start_times)}
                       </span>
                     )}
                     <span className="flex items-center gap-1">
@@ -414,23 +428,18 @@ function PropertiesOverview({ properties, onSelectProperty }) {
               </tr>
             ) : (
               sortedProperties.map((property) => {
-                const recentNote = getMostRecentNote(property);
-                const hasNote = recentNote !== null;
                 const startTimes = getStartTimes(property.zones);
+                const recentNote = getMostRecentNote(property);
                 
                 return (
                   <React.Fragment key={property.id}>
-                    <tr className={`hover:bg-gray-50 transition-colors ${hasNote ? 'bg-yellow-50' : ''}`}>
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900 min-w-[100px]">
+                    <tr className={`hover:bg-gray-50 ${recentNote ? 'bg-yellow-50' : ''}`}>
+                      <td className="px-4 py-3 text-sm whitespace-nowrap min-w-[100px]">
                         <div className="flex items-center gap-2">
-                          {hasNote && (
+                          {recentNote && (
                             <div className="relative group">
-                              <StickyNote 
-                                className="w-4 h-4 text-yellow-600 flex-shrink-0 cursor-help" 
-                                title={formatNoteTooltip(recentNote)}
-                              />
-                              {/* Enhanced tooltip on hover */}
-                              <div className="absolute left-0 top-5 z-20 hidden group-hover:block">
+                              <StickyNote className="w-4 h-4 text-yellow-600 cursor-help flex-shrink-0" />
+                              <div className="invisible group-hover:visible absolute left-0 bottom-full mb-2 z-50">
                                 <div className="bg-gray-900 text-white text-xs rounded-lg p-3 shadow-lg" style={{ width: '400px', maxWidth: '400px' }}>
                                   <div className="font-semibold mb-1">
                                     {recentNote.source} - {recentNote.date.toLocaleDateString('en-US', { 
@@ -549,10 +558,10 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                                       {zone.type}
                                     </span>
                                   </div>
-                                  {zone.start_time && (
+                                  {zone.start_times && zone.start_times.length > 0 && (
                                     <div className="flex items-center gap-1 text-green-700">
                                       <Play className="w-3 h-3" />
-                                      <span className="font-medium text-xs">{formatTime(zone.start_time)}</span>
+                                      <span className="font-medium text-xs">{formatMultipleStartTimes(zone.start_times)}</span>
                                     </div>
                                   )}
                                   <div className="flex items-center gap-1 text-gray-600">
