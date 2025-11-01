@@ -29,6 +29,15 @@ function ZoneCard({
     return `${displayHour}:${minutes} ${ampm}`;
   };
 
+  // Format multiple start times for display
+  const formatMultipleStartTimes = (startTimes) => {
+    if (!startTimes || !Array.isArray(startTimes) || startTimes.length === 0) {
+      return null;
+    }
+    
+    return startTimes.map(time => formatTime(time)).join(', ');
+  };
+
   if (isEditing) {
     return (
       <div className="border-2 border-blue-400 rounded-lg p-4">
@@ -70,11 +79,11 @@ function ZoneCard({
             
             {/* Zone Details - Stack on mobile, inline on desktop */}
             <div className="flex flex-col sm:flex-row flex-wrap gap-2 sm:gap-4 text-sm text-gray-600 lg:ml-9">
-              {zone.start_time && (
+              {zone.start_times && zone.start_times.length > 0 && (
                 <div className="flex items-center gap-1 whitespace-nowrap">
                   <Play className="w-4 h-4 text-green-600" />
                   <span className="font-medium text-green-700">
-                    {formatTime(zone.start_time)}
+                    {formatMultipleStartTimes(zone.start_times)}
                   </span>
                 </div>
               )}
