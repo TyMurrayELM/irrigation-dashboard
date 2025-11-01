@@ -1,8 +1,19 @@
 import React, { useState } from 'react';
-import { Save, X, Settings, Clock } from 'lucide-react';
+import { Save, X, Settings, Clock, Plus, Trash2 } from 'lucide-react';
 import { frequencyOptions, weekDays } from '../../data/constants';
 
 function ZoneForm({ zone, onSave, onCancel, controllers = [] }) {
+  // Initialize start_times array - convert old single start_time to array if needed
+  const initializeStartTimes = () => {
+    if (zone?.start_times && Array.isArray(zone.start_times)) {
+      return zone.start_times;
+    } else if (zone?.start_time) {
+      // Migrate old single start_time to array format
+      return [zone.start_time];
+    }
+    return [];
+  };
+
   const [formData, setFormData] = useState({
     name: zone?.name || '',
     type: zone?.type || 'turf',
@@ -10,7 +21,7 @@ function ZoneForm({ zone, onSave, onCancel, controllers = [] }) {
     frequency: zone?.frequency || 'daily',
     days: zone?.days || [],
     controller_id: zone?.controller_id || null,
-    start_time: zone?.start_time || ''
+    start_times: initializeStartTimes()
   });
   const [changeNote, setChangeNote] = useState('');
 
@@ -34,6 +45,27 @@ function ZoneForm({ zone, onSave, onCancel, controllers = [] }) {
       days: prev.days.includes(day) 
         ? prev.days.filter(d => d !== day)
         : [...prev.days, day]
+    }));
+  };
+
+  const addStartTime = () => {
+    setFormData(prev => ({
+      ...prev,
+      start_times: [...prev.start_times, '']
+    }));
+  };
+
+  const updateStartTime = (index, value) => {
+    setFormData(prev => ({
+      ...prev,
+      start_times: prev.start_times.map((time, i) => i === index ? value : time)
+    }));
+  };
+
+  const removeStartTime = (index) => {
+    setFormData(prev => ({
+      ...prev,
+      start_times: prev.start_times.filter((_, i) => i !== index)
     }));
   };
 
@@ -87,25 +119,56 @@ function ZoneForm({ zone, onSave, onCancel, controllers = [] }) {
         </div>
       </div>
 
-      {/* Second row with Start Time and Controller */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-        <div>
-          <label className="text-xs text-gray-600 block mb-1">
-            <Clock className="w-3 h-3 inline mr-1" />
-            Start Time
+      {/* Start Times Section */}
+      <div className="space-y-2">
+        <div className="flex items-center justify-between">
+          <label className="text-xs text-gray-600 flex items-center gap-1">
+            <Clock className="w-3 h-3" />
+            Start Times
           </label>
-          <input
-            type="time"
-            value={formData.start_time || ''}
-            onChange={(e) => setFormData({ ...formData, start_time: e.target.value })}
-            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
-            placeholder="HH:MM"
-          />
+          <button
+            type="button"
+            onClick={addStartTime}
+            className="flex items-center gap-1 px-2 py-1 text-xs text-blue-600 hover:bg-blue-100 rounded transition-colors"
+          >
+            <Plus className="w-3 h-3" />
+            Add Time
+          </button>
         </div>
+        
+        {formData.start_times.length === 0 ? (
+          <div className="text-xs text-gray-500 italic py-2">
+            No start times set. Click "Add Time" to add one.
+          </div>
+        ) : (
+          <div className="space-y-2">
+            {formData.start_times.map((time, index) => (
+              <div key={index} className="flex items-center gap-2">
+                <input
+                  type="time"
+                  value={time}
+                  onChange={(e) => updateStartTime(index, e.target.value)}
+                  className="flex-1 px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+                  placeholder="HH:MM"
+                />
+                <button
+                  type="button"
+                  onClick={() => removeStartTime(index)}
+                  className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                  title="Remove this start time"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
 
-        {/* Controller Selection */}
-        {controllers.length > 0 && (
-          <div className="sm:col-span-2 lg:col-span-2">
+      {/* Controller Selection */}
+      {controllers.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="sm:col-span-2">
             <label className="text-xs text-gray-600 block mb-1">
               <Settings className="w-3 h-3 inline mr-1" />
               Assign to Controller
@@ -124,8 +187,8 @@ function ZoneForm({ zone, onSave, onCancel, controllers = [] }) {
               ))}
             </select>
           </div>
-        )}
-      </div>
+        </div>
+      )}
       
       {formData.frequency === 'custom-days' && (
         <div>
