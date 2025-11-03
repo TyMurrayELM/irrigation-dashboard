@@ -2,10 +2,167 @@ import React, { useState } from 'react';
 import { Settings, Plus, Edit2, Trash2, MapPin, Hash, StickyNote, X, Save, Droplets, AlertCircle } from 'lucide-react';
 import { timerTypes } from '../../data/constants';
 
+// Define ControllerForm OUTSIDE the main component to prevent re-renders
+const ControllerForm = ({ 
+  formData, 
+  setFormData, 
+  customTimerType, 
+  setCustomTimerType, 
+  isEdit, 
+  isSubmitting, 
+  onSubmit, 
+  onCancel 
+}) => {
+  const showCustomInput = formData.controller_type === 'Other';
+
+  const handleLocalSubmit = async () => {
+    // Validate that if "Other" is selected, custom type is provided
+    if (formData.controller_type === 'Other' && !customTimerType.trim()) {
+      alert('Please enter a custom controller type');
+      return;
+    }
+    
+    await onSubmit();
+  };
+
+  return (
+    <div className="bg-blue-50 rounded-lg p-4 space-y-3">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+        <div>
+          <label className="text-xs text-gray-600 block mb-1">Controller Type *</label>
+          <select
+            value={formData.controller_type}
+            onChange={(e) => {
+              setFormData({ ...formData, controller_type: e.target.value });
+              // Clear custom type if switching away from "Other"
+              if (e.target.value !== 'Other') {
+                setCustomTimerType('');
+              }
+            }}
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+            disabled={isSubmitting}
+          >
+            <option value="">Select Controller Type</option>
+            {timerTypes.map(type => (
+              <option key={type} value={type}>{type}</option>
+            ))}
+          </select>
+        </div>
+        
+        {showCustomInput ? (
+          <div>
+            <label className="text-xs text-gray-600 block mb-1">
+              Custom Controller Type *
+              <AlertCircle className="w-3 h-3 inline ml-1 text-blue-500" />
+            </label>
+            <input
+              type="text"
+              placeholder="Enter custom controller type"
+              value={customTimerType}
+              onChange={(e) => setCustomTimerType(e.target.value)}
+              className="w-full px-3 py-2 border-2 border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+              disabled={isSubmitting}
+              autoFocus
+            />
+          </div>
+        ) : (
+          <div>
+            <label className="text-xs text-gray-600 block mb-1">Location</label>
+            <input
+              type="text"
+              placeholder="e.g., Front yard, Back yard"
+              value={formData.controller_location}
+              onChange={(e) => setFormData({ ...formData, controller_location: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+              disabled={isSubmitting}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Second row - adjust layout when custom input is shown */}
+      <div className={`grid grid-cols-1 ${showCustomInput ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`}>
+        {showCustomInput && (
+          <div>
+            <label className="text-xs text-gray-600 block mb-1">Location</label>
+            <input
+              type="text"
+              placeholder="e.g., Front yard, Back yard"
+              value={formData.controller_location}
+              onChange={(e) => setFormData({ ...formData, controller_location: e.target.value })}
+              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+              disabled={isSubmitting}
+            />
+          </div>
+        )}
+        <div>
+          <label className="text-xs text-gray-600 block mb-1">Serial Number</label>
+          <input
+            type="text"
+            placeholder="Serial/Model number"
+            value={formData.serial_number}
+            onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+            disabled={isSubmitting}
+          />
+        </div>
+        <div>
+          <label className="text-xs text-gray-600 block mb-1">Notes</label>
+          <input
+            type="text"
+            placeholder="Additional notes"
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+            className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
+            disabled={isSubmitting}
+          />
+        </div>
+      </div>
+
+      {showCustomInput && (
+        <div className="flex items-start gap-2 p-2 bg-blue-100 rounded-lg">
+          <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
+          <p className="text-xs text-blue-800">
+            Enter the specific model or brand of your controller (e.g., "Rain Bird ESP-RZXe", "Toro Evolution", etc.)
+          </p>
+        </div>
+      )}
+
+      <div className="flex flex-col sm:flex-row gap-2">
+        <button
+          onClick={handleLocalSubmit}
+          disabled={!formData.controller_type || (formData.controller_type === 'Other' && !customTimerType.trim()) || isSubmitting}
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors min-h-[40px]"
+        >
+          {isSubmitting ? (
+            <>
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+              Processing...
+            </>
+          ) : (
+            <>
+              <Save className="w-4 h-4" />
+              {isEdit ? 'Update' : 'Add'} Controller
+            </>
+          )}
+        </button>
+        <button
+          onClick={onCancel}
+          disabled={isSubmitting}
+          className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[40px]"
+        >
+          <X className="w-4 h-4" />
+          Cancel
+        </button>
+      </div>
+    </div>
+  );
+};
+
 function PropertyControllers({ property, controllers, onAddController, onUpdateController, onDeleteController, currentUser }) {
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState(null);
-  const [isSubmitting, setIsSubmitting] = useState(false); // Add loading state
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     controller_type: '',
     controller_location: '',
@@ -28,9 +185,8 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
   };
 
   const handleAdd = async () => {
-    if (isSubmitting) return; // Prevent double submission
+    if (isSubmitting) return;
     
-    // Use custom timer type if "Other" is selected
     const finalControllerType = formData.controller_type === 'Other' 
       ? customTimerType 
       : formData.controller_type;
@@ -53,7 +209,6 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
   const handleEdit = (controller) => {
     setEditingId(controller.id);
     
-    // Check if the controller type is a standard one or custom
     const isStandardType = timerTypes.includes(controller.controller_type);
     
     setFormData({
@@ -63,7 +218,6 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
       notes: controller.notes || ''
     });
     
-    // If it's a custom type, set the custom timer input
     if (!isStandardType) {
       setCustomTimerType(controller.controller_type);
     } else {
@@ -74,9 +228,8 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
   };
 
   const handleUpdate = async () => {
-    if (isSubmitting) return; // Prevent double submission
+    if (isSubmitting) return;
     
-    // Use custom timer type if "Other" is selected
     const finalControllerType = formData.controller_type === 'Other' 
       ? customTimerType 
       : formData.controller_type;
@@ -102,13 +255,11 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
     }
   };
 
-  // Count zones assigned to each controller
   const getZoneCount = (controllerId) => {
     if (!property.zones) return 0;
     return property.zones.filter(zone => zone.controller_id === controllerId).length;
   };
 
-  // Get zone names for a controller
   const getZoneNames = (controllerId) => {
     if (!property.zones) return [];
     return property.zones
@@ -116,167 +267,24 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
       .map(zone => zone.name);
   };
 
-  const ControllerForm = ({ isEdit = false }) => {
-    const showCustomInput = formData.controller_type === 'Other';
-
-    const handleLocalSubmit = async () => {
-      // Validate that if "Other" is selected, custom type is provided
-      if (formData.controller_type === 'Other' && !customTimerType.trim()) {
-        alert('Please enter a custom controller type');
-        return;
-      }
-      
-      // Call the appropriate function and wait for completion
-      if (isEdit) {
-        await handleUpdate();
-      } else {
-        await handleAdd();
-      }
-    };
-
-    return (
-      <div className="bg-blue-50 rounded-lg p-4 space-y-3">
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <div>
-            <label className="text-xs text-gray-600 block mb-1">Controller Type *</label>
-            <select
-              value={formData.controller_type}
-              onChange={(e) => {
-                setFormData({ ...formData, controller_type: e.target.value });
-                // Clear custom type if switching away from "Other"
-                if (e.target.value !== 'Other') {
-                  setCustomTimerType('');
-                }
-              }}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
-              disabled={isSubmitting}
-            >
-              <option value="">Select Controller Type</option>
-              {timerTypes.map(type => (
-                <option key={type} value={type}>{type}</option>
-              ))}
-            </select>
-          </div>
-          
-          {showCustomInput ? (
-            <div>
-              <label className="text-xs text-gray-600 block mb-1">
-                Custom Controller Type *
-                <AlertCircle className="w-3 h-3 inline ml-1 text-blue-500" />
-              </label>
-              <input
-                type="text"
-                placeholder="Enter custom controller type"
-                value={customTimerType}
-                onChange={(e) => setCustomTimerType(e.target.value)}
-                className="w-full px-3 py-2 border-2 border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
-                disabled={isSubmitting}
-                autoFocus
-              />
-            </div>
-          ) : (
-            <div>
-              <label className="text-xs text-gray-600 block mb-1">Location</label>
-              <input
-                type="text"
-                placeholder="e.g., Front yard, Back yard"
-                value={formData.controller_location}
-                onChange={(e) => setFormData({ ...formData, controller_location: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
-                disabled={isSubmitting}
-              />
-            </div>
-          )}
-        </div>
-
-        {/* Second row - adjust layout when custom input is shown */}
-        <div className={`grid grid-cols-1 ${showCustomInput ? 'sm:grid-cols-3' : 'sm:grid-cols-2'} gap-3`}>
-          {showCustomInput && (
-            <div>
-              <label className="text-xs text-gray-600 block mb-1">Location</label>
-              <input
-                type="text"
-                placeholder="e.g., Front yard, Back yard"
-                value={formData.controller_location}
-                onChange={(e) => setFormData({ ...formData, controller_location: e.target.value })}
-                className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
-                disabled={isSubmitting}
-              />
-            </div>
-          )}
-          <div>
-            <label className="text-xs text-gray-600 block mb-1">Serial Number</label>
-            <input
-              type="text"
-              placeholder="Serial/Model number"
-              value={formData.serial_number}
-              onChange={(e) => setFormData({ ...formData, serial_number: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
-              disabled={isSubmitting}
-            />
-          </div>
-          <div>
-            <label className="text-xs text-gray-600 block mb-1">Notes</label>
-            <input
-              type="text"
-              placeholder="Additional notes"
-              value={formData.notes}
-              onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              className="w-full px-3 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 min-h-[40px]"
-              disabled={isSubmitting}
-            />
-          </div>
-        </div>
-
-        {showCustomInput && (
-          <div className="flex items-start gap-2 p-2 bg-blue-100 rounded-lg">
-            <AlertCircle className="w-4 h-4 text-blue-600 mt-0.5 flex-shrink-0" />
-            <p className="text-xs text-blue-800">
-              Enter the specific model or brand of your controller (e.g., "Rain Bird ESP-RZXe", "Toro Evolution", etc.)
-            </p>
-          </div>
-        )}
-
-        <div className="flex flex-col sm:flex-row gap-2">
-          <button
-            onClick={handleLocalSubmit}
-            disabled={!formData.controller_type || (formData.controller_type === 'Other' && !customTimerType.trim()) || isSubmitting}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors min-h-[40px]"
-          >
-            {isSubmitting ? (
-              <>
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                Processing...
-              </>
-            ) : (
-              <>
-                <Save className="w-4 h-4" />
-                {isEdit ? 'Update' : 'Add'} Controller
-              </>
-            )}
-          </button>
-          <button
-            onClick={resetForm}
-            disabled={isSubmitting}
-            className="flex items-center justify-center gap-2 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[40px]"
-          >
-            <X className="w-4 h-4" />
-            Cancel
-          </button>
-        </div>
-      </div>
-    );
-  };
-
   const ControllerCard = ({ controller }) => {
     if (editingId === controller.id) {
-      return <ControllerForm isEdit={true} />;
+      return (
+        <ControllerForm
+          formData={formData}
+          setFormData={setFormData}
+          customTimerType={customTimerType}
+          setCustomTimerType={setCustomTimerType}
+          isEdit={true}
+          isSubmitting={isSubmitting}
+          onSubmit={handleUpdate}
+          onCancel={resetForm}
+        />
+      );
     }
 
     const zoneCount = getZoneCount(controller.id);
     const zoneNames = getZoneNames(controller.id);
-    
-    // Check if this is a custom controller type
     const isCustomType = !timerTypes.includes(controller.controller_type);
 
     return (
@@ -299,35 +307,35 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
                 </span>
               )}
             </div>
-            <div className="flex flex-wrap gap-3 text-sm text-gray-600">
+            
+            <div className="space-y-1 text-sm text-gray-600">
               {controller.controller_location && (
-                <div className="flex items-center gap-1">
-                  <MapPin className="w-3 h-3" />
+                <div className="flex items-center gap-2">
+                  <MapPin className="w-4 h-4 text-gray-400" />
                   <span>{controller.controller_location}</span>
                 </div>
               )}
               {controller.serial_number && (
-                <div className="flex items-center gap-1">
-                  <Hash className="w-3 h-3" />
+                <div className="flex items-center gap-2">
+                  <Hash className="w-4 h-4 text-gray-400" />
                   <span>{controller.serial_number}</span>
                 </div>
               )}
               {controller.notes && (
-                <div className="flex items-center gap-1">
-                  <StickyNote className="w-3 h-3" />
+                <div className="flex items-center gap-2">
+                  <StickyNote className="w-4 h-4 text-gray-400" />
                   <span className="italic">{controller.notes}</span>
                 </div>
               )}
-            </div>
-            {zoneCount > 0 && (
-              <div className="mt-2 flex items-start gap-1">
-                <Droplets className="w-3 h-3 text-blue-500 mt-0.5" />
-                <div className="text-xs text-gray-500">
-                  Zones: {zoneNames.join(', ')}
+              {zoneCount > 0 && (
+                <div className="flex items-start gap-2 mt-2">
+                  <Droplets className="w-4 h-4 text-gray-400 mt-0.5" />
+                  <span className="text-xs">{zoneNames.join(', ')}</span>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
           </div>
+          
           {currentUser && (
             <div className="flex gap-2">
               <button
@@ -340,7 +348,7 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
               <button
                 onClick={() => handleDelete(controller.id)}
                 className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                title="Remove controller"
+                title="Delete controller"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -354,14 +362,14 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-800 flex items-center gap-2">
-          <Settings className="w-5 h-5 text-gray-600" />
+        <h4 className="text-lg font-semibold flex items-center gap-2">
+          <Settings className="w-5 h-5 text-blue-600" />
           Controllers
-        </h3>
+        </h4>
         {currentUser && !isAdding && !editingId && (
           <button
             onClick={() => setIsAdding(true)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+            className="flex items-center gap-2 px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
           >
             <Plus className="w-4 h-4" />
             Add Controller
@@ -369,7 +377,18 @@ function PropertyControllers({ property, controllers, onAddController, onUpdateC
         )}
       </div>
 
-      {isAdding && <ControllerForm />}
+      {isAdding && (
+        <ControllerForm
+          formData={formData}
+          setFormData={setFormData}
+          customTimerType={customTimerType}
+          setCustomTimerType={setCustomTimerType}
+          isEdit={false}
+          isSubmitting={isSubmitting}
+          onSubmit={handleAdd}
+          onCancel={resetForm}
+        />
+      )}
 
       {controllers.length === 0 && !isAdding ? (
         <div className="text-center py-8 text-gray-500 bg-gray-50 rounded-lg">
