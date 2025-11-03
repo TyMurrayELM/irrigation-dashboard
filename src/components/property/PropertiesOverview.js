@@ -4,6 +4,8 @@ import { Calendar, Clock, AlertCircle, CheckCircle, Settings, ChevronDown, Chevr
 function PropertiesOverview({ properties, onSelectProperty }) {
   const [expandedProperties, setExpandedProperties] = useState(new Set());
   const [expandedNotes, setExpandedNotes] = useState(new Set());
+  const [expandedZonesInCard, setExpandedZonesInCard] = useState(new Set());
+  const [expandedNotesInCard, setExpandedNotesInCard] = useState(new Set());
 
   const getStatusIcon = (days) => {
     if (days === null || days === undefined) return <AlertCircle className="w-4 h-4 text-gray-400" />;
@@ -99,6 +101,30 @@ function PropertiesOverview({ properties, onSelectProperty }) {
       newExpanded.add(propertyId);
     }
     setExpandedNotes(newExpanded);
+  };
+
+  const toggleZonesInCard = (propertyId) => {
+    setExpandedZonesInCard(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(propertyId)) {
+        newSet.delete(propertyId);
+      } else {
+        newSet.add(propertyId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleNotesInCard = (propertyId) => {
+    setExpandedNotesInCard(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(propertyId)) {
+        newSet.delete(propertyId);
+      } else {
+        newSet.add(propertyId);
+      }
+      return newSet;
+    });
   };
 
   const getZoneIcon = (type) => {
@@ -268,12 +294,14 @@ function PropertiesOverview({ properties, onSelectProperty }) {
     return tooltip;
   };
 
-  // Mobile Card Component for User Activity
+  // Mobile Card Component
   const PropertyCard = ({ property }) => {
     const recentNote = getMostRecentNote(property);
     const hasNote = recentNote !== null;
-    const isExpanded = expandedProperties.has(property.id);
+    const isZonesExpanded = expandedZonesInCard.has(property.id);
+    const isNotesExpanded = expandedNotesInCard.has(property.id);
     const startTimes = getStartTimes(property.zones);
+    const hasNotes = property.notes && Array.isArray(property.notes) && property.notes.length > 0;
     
     return (
       <div className={`bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden ${hasNote ? 'ring-2 ring-yellow-400' : ''}`}>
@@ -327,24 +355,6 @@ function PropertiesOverview({ properties, onSelectProperty }) {
               <p className="text-gray-500">Zones</p>
               <p className="font-medium">{property.zones?.length || 0} zones / {getTotalDuration(property.zones)} min</p>
             </div>
-            <div>
-              <p className="text-gray-500">Last Invoice</p>
-              <div className="flex items-center gap-1">
-                {getStatusIcon(property.days_since_irrigation_invoice)}
-                <span className={getStatusColor(property.days_since_irrigation_invoice)}>
-                  {property.days_since_irrigation_invoice || 'N/A'} days
-                </span>
-              </div>
-            </div>
-            <div>
-              <p className="text-gray-500">Last Visit</p>
-              <div className="flex items-center gap-1">
-                {getStatusIcon(property.days_since_irrigation_visit)}
-                <span className={getStatusColor(property.days_since_irrigation_visit)}>
-                  {property.days_since_irrigation_visit || 'N/A'} days
-                </span>
-              </div>
-            </div>
           </div>
           
           <div>
@@ -358,61 +368,91 @@ function PropertiesOverview({ properties, onSelectProperty }) {
               <p className="font-medium text-sm text-green-700">{startTimes}</p>
             </div>
           )}
-          
+
+          {/* Collapsible Zones Section */}
           {property.zones && property.zones.length > 0 && (
-            <button
-              onClick={() => toggleExpanded(property.id)}
-              className="w-full flex items-center justify-center gap-2 py-2 text-sm text-gray-600 hover:bg-gray-50 rounded-lg"
-            >
-              {isExpanded ? (
-                <>Hide Zones <ChevronUp className="w-4 h-4" /></>
-              ) : (
-                <>Show Zones <ChevronDown className="w-4 h-4" /></>
+            <div className="border-t border-gray-200 pt-3">
+              <button
+                onClick={() => toggleZonesInCard(property.id)}
+                className="flex items-center justify-between w-full text-left"
+              >
+                <span className="font-medium text-gray-700 text-sm">
+                  Zones ({property.zones.length})
+                </span>
+                {isZonesExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+              
+              {isZonesExpanded && (
+                <div className="mt-2 space-y-2">
+                  {property.zones.map((zone) => (
+                    <div key={zone.id} className="bg-gray-50 p-2 rounded border border-gray-200">
+                      <div className="flex items-center gap-2 mb-1">
+                        {getZoneIcon(zone.type)}
+                        <span className="font-medium text-sm">{zone.name}</span>
+                        <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full capitalize">
+                          {zone.type}
+                        </span>
+                      </div>
+                      <div className="flex flex-wrap gap-3 text-xs text-gray-600">
+                        {zone.start_times && zone.start_times.length > 0 && (
+                          <span className="flex items-center gap-1 text-green-700">
+                            <Play className="w-3 h-3" />
+                            {formatMultipleStartTimes(zone.start_times)}
+                          </span>
+                        )}
+                        <span className="flex items-center gap-1">
+                          <Clock className="w-3 h-3" />
+                          {zone.duration} min
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar className="w-3 h-3" />
+                          {formatFrequency(zone.frequency, zone.days)}
+                        </span>
+                        {zone.last_adjusted_by && (
+                          <span className="flex items-center gap-1">
+                            <User className="w-3 h-3" />
+                            {zone.last_adjusted_by}
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  ))}
+                </div>
               )}
-            </button>
+            </div>
+          )}
+
+          {/* Collapsible Notes Section */}
+          {hasNotes && (
+            <div className="border-t border-gray-200 pt-3">
+              <button
+                onClick={() => toggleNotesInCard(property.id)}
+                className="flex items-center justify-between w-full text-left"
+              >
+                <span className="font-medium text-gray-700 text-sm">
+                  Notes ({property.notes.length})
+                </span>
+                {isNotesExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+              
+              {isNotesExpanded && (
+                <div className="mt-2 space-y-2">
+                  {property.notes.map((note, index) => (
+                    <div key={index} className="bg-blue-50 p-2 rounded border border-blue-200">
+                      <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                        <User className="w-3 h-3" />
+                        <span className="font-medium">{note.user || 'Unknown'}</span>
+                        <span>•</span>
+                        <span>{new Date(note.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                      <p className="text-sm text-gray-700">{note.text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
           )}
         </div>
-        
-        {/* Expanded Zones */}
-        {isExpanded && property.zones && property.zones.length > 0 && (
-          <div className="px-4 pb-4">
-            <div className="bg-gray-50 rounded-lg p-3 space-y-2">
-              {property.zones.map((zone) => (
-                <div key={zone.id} className="bg-white p-2 rounded border border-gray-200">
-                  <div className="flex items-center gap-2 mb-1">
-                    {getZoneIcon(zone.type)}
-                    <span className="font-medium text-sm">{zone.name}</span>
-                    <span className="text-xs px-2 py-0.5 bg-gray-100 rounded-full capitalize">
-                      {zone.type}
-                    </span>
-                  </div>
-                  <div className="flex flex-wrap gap-3 text-xs text-gray-600">
-                    {zone.start_times && zone.start_times.length > 0 && (
-                      <span className="flex items-center gap-1 text-green-700">
-                        <Play className="w-3 h-3" />
-                        {formatMultipleStartTimes(zone.start_times)}
-                      </span>
-                    )}
-                    <span className="flex items-center gap-1">
-                      <Clock className="w-3 h-3" />
-                      {zone.duration} min
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-3 h-3" />
-                      {formatFrequency(zone.frequency, zone.days)}
-                    </span>
-                    {zone.last_adjusted_by && (
-                      <span className="flex items-center gap-1">
-                        <User className="w-3 h-3" />
-                        {zone.last_adjusted_by}
-                      </span>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </div>
-          </div>
-        )}
       </div>
     );
   };
@@ -459,8 +499,6 @@ function PropertiesOverview({ properties, onSelectProperty }) {
               <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50 border-b border-gray-200">Total Min</th>
               <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200">Start Times</th>
               <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px] bg-gray-50 border-b border-gray-200">Schedule</th>
-              {/* <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50 border-b border-gray-200">Days Since<br/>Invoice</th>
-              <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50 border-b border-gray-200">Days Since<br/>Visit</th> */}
               <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 bg-gray-50 border-b border-gray-200">Last Adjuster</th>
               <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50 border-b border-gray-200">Actions</th>
             </tr>
@@ -572,22 +610,6 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                           {getScheduleSummary(property.zones)}
                         </span>
                       </td>
-                      {/* <td className="px-4 py-3 text-sm text-center w-20">
-                        <div className="flex items-center justify-center gap-1">
-                          {getStatusIcon(property.days_since_irrigation_invoice)}
-                          <span className={getStatusColor(property.days_since_irrigation_invoice)}>
-                            {property.days_since_irrigation_invoice || 'N/A'}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 text-sm text-center w-20">
-                        <div className="flex items-center justify-center gap-1">
-                          {getStatusIcon(property.days_since_irrigation_visit)}
-                          <span className={getStatusColor(property.days_since_irrigation_visit)}>
-                            {property.days_since_irrigation_visit || 'N/A'}
-                          </span>
-                        </div>
-                      </td> */}
                       <td className="px-4 py-3 text-sm text-gray-600 w-32">
                         <div className="flex items-center gap-1 truncate">
                           <User className="w-3 h-3 text-gray-400 flex-shrink-0" />
