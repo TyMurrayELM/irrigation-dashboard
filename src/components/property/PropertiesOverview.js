@@ -114,6 +114,36 @@ function PropertiesOverview({ properties, onSelectProperty }) {
     }
   };
 
+  const getBranchIcon = (branch) => {
+    if (!branch) return null;
+    
+    const branchLower = branch.toLowerCase();
+    let iconFile = null;
+    
+    if (branchLower.includes('southwest') || branchLower === 'phx-sw') {
+      iconFile = 'phx-sw.png';
+    } else if (branchLower.includes('southeast') || branchLower === 'phx-se') {
+      iconFile = 'phx-se.png';
+    } else if (branchLower.includes('north') || branchLower === 'phx-north') {
+      iconFile = 'phx-north.png';
+    } else if (branchLower.includes('vegas') || branchLower === 'lv' || branchLower === 'las vegas') {
+      iconFile = 'lv.png';
+    }
+    
+    if (iconFile) {
+      return (
+        <img 
+          src={`/${iconFile}`} 
+          alt={branch}
+          className="w-6 h-6 object-contain"
+          title={branch}
+        />
+      );
+    }
+    
+    return <span className="text-xs text-gray-400">{branch}</span>;
+  };
+
   const formatFrequency = (frequency, days) => {
     if (frequency === 'custom-days' && days && days.length > 0) {
       return days.join(', ');
@@ -420,6 +450,7 @@ function PropertiesOverview({ properties, onSelectProperty }) {
             <tr className="bg-gray-50 border-b border-gray-200">
               <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200">Property</th>
               <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50 border-b border-gray-200">Region</th>
+              <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16 bg-gray-50 border-b border-gray-200">Branch</th>
               <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200">Timer</th>
               <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16 bg-gray-50 border-b border-gray-200">Zones</th>
               <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50 border-b border-gray-200">Total Min</th>
@@ -434,7 +465,7 @@ function PropertiesOverview({ properties, onSelectProperty }) {
           <tbody className="bg-white divide-y divide-gray-200">
             {sortedProperties.length === 0 ? (
               <tr>
-                <td colSpan="9" className="px-4 py-8 text-center text-gray-500">
+                <td colSpan="10" className="px-4 py-8 text-center text-gray-500">
                   No properties found matching the selected filters
                 </td>
               </tr>
@@ -494,13 +525,31 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                       <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap w-20">
                         {property.region}
                       </td>
+                      <td className="px-4 py-3 text-center w-16">
+                        {getBranchIcon(property.branch)}
+                      </td>
                       <td className="px-4 py-3 text-sm text-gray-600">
                         <span className={`${property.timer_type ? 'text-blue-600 font-medium' : 'text-gray-400'}`} title={property.timer_type}>
                           {property.timer_type || 'Not set'}
                         </span>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600 text-center w-16">
-                        {property.zones?.length || 0}
+                        <div className="flex items-center justify-center gap-1">
+                          <span>{property.zones?.length || 0}</span>
+                          {property.zones && property.zones.length > 0 && (
+                            <button
+                              onClick={() => toggleExpanded(property.id)}
+                              className="text-gray-600 hover:text-gray-800"
+                              title={expandedProperties.has(property.id) ? "Hide zones" : "Show zones"}
+                            >
+                              {expandedProperties.has(property.id) ? (
+                                <ChevronUp className="w-4 h-4" />
+                              ) : (
+                                <ChevronDown className="w-4 h-4" />
+                              )}
+                            </button>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600 text-center font-medium w-20">
                         {getTotalDuration(property.zones)}
@@ -543,34 +592,19 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-center w-20">
-                        <div className="flex items-center justify-center gap-2">
-                          {property.zones && property.zones.length > 0 && (
-                            <button
-                              onClick={() => toggleExpanded(property.id)}
-                              className="text-gray-600 hover:text-gray-800"
-                              title={expandedProperties.has(property.id) ? "Hide zones" : "Show zones"}
-                            >
-                              {expandedProperties.has(property.id) ? (
-                                <ChevronUp className="w-4 h-4" />
-                              ) : (
-                                <ChevronDown className="w-4 h-4" />
-                              )}
-                            </button>
-                          )}
-                          <button
-                            onClick={() => onSelectProperty(property)}
-                            className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1"
-                          >
-                            <Settings className="w-4 h-4" />
-                          </button>
-                        </div>
+                        <button
+                          onClick={() => onSelectProperty(property)}
+                          className="text-blue-600 hover:text-blue-800 font-medium flex items-center gap-1 mx-auto"
+                        >
+                          <Settings className="w-4 h-4" />
+                        </button>
                       </td>
                     </tr>
                     
                     {/* Expanded notes section */}
                     {expandedNotes.has(property.id) && property.notes && Array.isArray(property.notes) && property.notes.length > 0 && (
                       <tr>
-                        <td colSpan="9" className="px-4 py-3 bg-blue-50">
+                        <td colSpan="10" className="px-4 py-3 bg-blue-50">
                           <div className="ml-8">
                             <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
                               <StickyNote className="w-4 h-4 text-blue-600" />
@@ -599,7 +633,7 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                     {/* Expanded zones section */}
                     {expandedProperties.has(property.id) && property.zones && property.zones.length > 0 && (
                       <tr>
-                        <td colSpan="9" className="px-4 py-3 bg-gray-50">
+                        <td colSpan="10" className="px-4 py-3 bg-gray-50">
                           <div className="ml-8">
                             <h4 className="text-sm font-semibold text-gray-700 mb-2">Zones:</h4>
                             <div className="space-y-2">
