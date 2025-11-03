@@ -1,11 +1,12 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, AlertCircle, CheckCircle, Settings, ChevronDown, ChevronUp, Droplets, TreePine, User, StickyNote, Play } from 'lucide-react';
+import { Calendar, Clock, AlertCircle, CheckCircle, Settings, ChevronDown, ChevronUp, Droplets, TreePine, User, StickyNote, Play, Search, X } from 'lucide-react';
 
 function PropertiesOverview({ properties, onSelectProperty }) {
   const [expandedProperties, setExpandedProperties] = useState(new Set());
   const [expandedNotes, setExpandedNotes] = useState(new Set());
   const [expandedZonesInCard, setExpandedZonesInCard] = useState(new Set());
   const [expandedNotesInCard, setExpandedNotesInCard] = useState(new Set());
+  const [searchTerm, setSearchTerm] = useState('');
 
   const getStatusIcon = (days) => {
     if (days === null || days === undefined) return <AlertCircle className="w-4 h-4 text-gray-400" />;
@@ -275,6 +276,16 @@ function PropertiesOverview({ properties, onSelectProperty }) {
     return a.name.localeCompare(b.name);
   });
 
+  // Filter properties based on search term
+  const filteredProperties = sortedProperties.filter(property => 
+    property.name.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  // Clear search handler
+  const clearSearch = () => {
+    setSearchTerm('');
+  };
+
   // Format tooltip text for the note
   const formatNoteTooltip = (noteData) => {
     if (!noteData) return '';
@@ -460,8 +471,38 @@ function PropertiesOverview({ properties, onSelectProperty }) {
   return (
     <div className="bg-white rounded-xl shadow-lg overflow-hidden h-[600px] flex flex-col">
       <div className="p-4 lg:p-6 border-b border-gray-200">
-        <h2 className="text-xl font-semibold text-gray-800">Properties Overview</h2>
-        <p className="text-sm text-gray-600 mt-1">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="text-xl font-semibold text-gray-800">Properties Overview</h2>
+          {searchTerm && (
+            <span className="text-sm text-gray-600">
+              {filteredProperties.length} of {properties.length} properties
+            </span>
+          )}
+        </div>
+        
+        {/* Search Input */}
+        <div className="mb-3">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search properties by name..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full pl-10 pr-10 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm"
+            />
+            {searchTerm && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
+          </div>
+        </div>
+        
+        <p className="text-sm text-gray-600">
           <span className="hidden lg:inline">Click property name to view details • Click arrow to expand zones</span>
           <span className="lg:hidden">Tap property to view details</span>
           <span className="hidden sm:inline ml-2">
@@ -473,13 +514,13 @@ function PropertiesOverview({ properties, onSelectProperty }) {
       
       {/* Mobile View - Cards */}
       <div className="lg:hidden flex-1 overflow-y-auto p-4">
-        {sortedProperties.length === 0 ? (
+        {filteredProperties.length === 0 ? (
           <div className="text-center py-8 text-gray-500">
-            No properties found matching the selected filters
+            {searchTerm ? `No properties found matching "${searchTerm}"` : 'No properties found matching the selected filters'}
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {sortedProperties.map((property) => (
+            {filteredProperties.map((property) => (
               <PropertyCard key={property.id} property={property} />
             ))}
           </div>
@@ -504,14 +545,14 @@ function PropertiesOverview({ properties, onSelectProperty }) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {sortedProperties.length === 0 ? (
+            {filteredProperties.length === 0 ? (
               <tr>
                 <td colSpan="10" className="px-4 py-8 text-center text-gray-500">
-                  No properties found matching the selected filters
+                  {searchTerm ? `No properties found matching "${searchTerm}"` : 'No properties found matching the selected filters'}
                 </td>
               </tr>
             ) : (
-              sortedProperties.map((property) => {
+              filteredProperties.map((property) => {
                 const startTimes = getStartTimes(property.zones);
                 const recentNote = getMostRecentNote(property);
                 
