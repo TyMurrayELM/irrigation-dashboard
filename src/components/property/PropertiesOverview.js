@@ -340,6 +340,37 @@ function PropertiesOverview({ properties, onSelectProperty }) {
               </div>
             </div>
           )}
+
+          {/* Collapsible Notes Section - Under Recent Note Alert */}
+          {hasNotes && (
+            <div className="pt-3">
+              <button
+                onClick={() => toggleNotesInCard(property.id)}
+                className="flex items-center justify-between w-full text-left"
+              >
+                <span className="font-medium text-gray-700 text-sm">
+                  Notes ({property.notes.length})
+                </span>
+                {isNotesExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              </button>
+              
+              {isNotesExpanded && (
+                <div className="mt-2 space-y-2">
+                  {property.notes.map((note, index) => (
+                    <div key={index} className="bg-blue-50 p-2 rounded border border-blue-200">
+                      <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
+                        <User className="w-3 h-3" />
+                        <span className="font-medium">{note.user || 'Unknown'}</span>
+                        <span>•</span>
+                        <span>{new Date(note.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                      </div>
+                      <p className="text-sm text-gray-700">{note.text}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
         </div>
         
         {/* Card Body */}
@@ -415,37 +446,6 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                           </span>
                         )}
                       </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-          )}
-
-          {/* Collapsible Notes Section */}
-          {hasNotes && (
-            <div className="border-t border-gray-200 pt-3">
-              <button
-                onClick={() => toggleNotesInCard(property.id)}
-                className="flex items-center justify-between w-full text-left"
-              >
-                <span className="font-medium text-gray-700 text-sm">
-                  Notes ({property.notes.length})
-                </span>
-                {isNotesExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
-              </button>
-              
-              {isNotesExpanded && (
-                <div className="mt-2 space-y-2">
-                  {property.notes.map((note, index) => (
-                    <div key={index} className="bg-blue-50 p-2 rounded border border-blue-200">
-                      <div className="flex items-center gap-2 text-xs text-gray-500 mb-1">
-                        <User className="w-3 h-3" />
-                        <span className="font-medium">{note.user || 'Unknown'}</span>
-                        <span>•</span>
-                        <span>{new Date(note.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
-                      </div>
-                      <p className="text-sm text-gray-700">{note.text}</p>
                     </div>
                   ))}
                 </div>
