@@ -287,7 +287,10 @@ function PropertiesOverview({ properties, onSelectProperty }) {
               >
                 {property.name}
               </button>
-              <p className="text-sm text-gray-600 mt-1">{property.region}</p>
+              <div className="flex items-center gap-2 mt-1">
+                <p className="text-sm text-gray-600">{property.region}</p>
+                {getBranchIcon(property.branch)}
+              </div>
             </div>
             <button
               onClick={() => onSelectProperty(property)}
