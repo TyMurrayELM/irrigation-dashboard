@@ -3,6 +3,7 @@ import { Calendar, Clock, AlertCircle, CheckCircle, Settings, ChevronDown, Chevr
 
 function PropertiesOverview({ properties, onSelectProperty }) {
   const [expandedProperties, setExpandedProperties] = useState(new Set());
+  const [expandedNotes, setExpandedNotes] = useState(new Set());
 
   const getStatusIcon = (days) => {
     if (days === null || days === undefined) return <AlertCircle className="w-4 h-4 text-gray-400" />;
@@ -87,6 +88,17 @@ function PropertiesOverview({ properties, onSelectProperty }) {
       newExpanded.add(propertyId);
     }
     setExpandedProperties(newExpanded);
+  };
+
+  const toggleNotes = (propertyId, e) => {
+    e.stopPropagation(); // Prevent triggering property selection
+    const newExpanded = new Set(expandedNotes);
+    if (newExpanded.has(propertyId)) {
+      newExpanded.delete(propertyId);
+    } else {
+      newExpanded.add(propertyId);
+    }
+    setExpandedNotes(newExpanded);
   };
 
   const getZoneIcon = (type) => {
@@ -406,15 +418,15 @@ function PropertiesOverview({ properties, onSelectProperty }) {
         <table className="w-full table-auto">
           <thead className="sticky top-0 z-10">
             <tr className="bg-gray-50 border-b border-gray-200">
-              <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[100px] bg-gray-50 border-b border-gray-200">Property</th>
+              <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200">Property</th>
               <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50 border-b border-gray-200">Region</th>
-              <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 bg-gray-50 border-b border-gray-200">Timer</th>
+              <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200">Timer</th>
               <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-16 bg-gray-50 border-b border-gray-200">Zones</th>
               <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50 border-b border-gray-200">Total Min</th>
-              <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[120px] bg-gray-50 border-b border-gray-200">Start Times</th>
+              <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider bg-gray-50 border-b border-gray-200">Start Times</th>
               <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider min-w-[150px] bg-gray-50 border-b border-gray-200">Schedule</th>
-              <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50 border-b border-gray-200">Days Since<br/>Invoice</th>
-              <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50 border-b border-gray-200">Days Since<br/>Visit</th>
+              {/* <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50 border-b border-gray-200">Days Since<br/>Invoice</th>
+              <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50 border-b border-gray-200">Days Since<br/>Visit</th> */}
               <th className="sticky top-0 px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-32 bg-gray-50 border-b border-gray-200">Last Adjuster</th>
               <th className="sticky top-0 px-4 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-20 bg-gray-50 border-b border-gray-200">Actions</th>
             </tr>
@@ -422,7 +434,7 @@ function PropertiesOverview({ properties, onSelectProperty }) {
           <tbody className="bg-white divide-y divide-gray-200">
             {sortedProperties.length === 0 ? (
               <tr>
-                <td colSpan="11" className="px-4 py-8 text-center text-gray-500">
+                <td colSpan="9" className="px-4 py-8 text-center text-gray-500">
                   No properties found matching the selected filters
                 </td>
               </tr>
@@ -434,8 +446,21 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                 return (
                   <React.Fragment key={property.id}>
                     <tr className={`hover:bg-gray-50 ${recentNote ? 'bg-yellow-50' : ''}`}>
-                      <td className="px-4 py-3 text-sm whitespace-nowrap min-w-[100px]">
+                      <td className="px-4 py-3 text-sm">
                         <div className="flex items-center gap-2">
+                          {property.notes && Array.isArray(property.notes) && property.notes.length > 0 && (
+                            <button
+                              onClick={(e) => toggleNotes(property.id, e)}
+                              className="text-gray-600 hover:text-gray-800 flex-shrink-0"
+                              title={expandedNotes.has(property.id) ? "Hide notes" : "Show notes"}
+                            >
+                              {expandedNotes.has(property.id) ? (
+                                <ChevronDown className="w-4 h-4" />
+                              ) : (
+                                <ChevronUp className="w-4 h-4 transform rotate-90" />
+                              )}
+                            </button>
+                          )}
                           {recentNote && (
                             <div className="relative group">
                               <StickyNote className="w-4 h-4 text-yellow-600 cursor-help flex-shrink-0" />
@@ -458,19 +483,19 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                               </div>
                             </div>
                           )}
-                          <button
+                          <span
                             onClick={() => onSelectProperty(property)}
-                            className="text-blue-600 hover:text-blue-800 hover:underline text-left"
+                            className="text-blue-600 hover:text-blue-800 hover:underline cursor-pointer"
                           >
                             {property.name}
-                          </button>
+                          </span>
                         </div>
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap w-20">
                         {property.region}
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-600 w-32">
-                        <span className={`${property.timer_type ? 'text-blue-600 font-medium' : 'text-gray-400'} truncate block`} title={property.timer_type}>
+                      <td className="px-4 py-3 text-sm text-gray-600">
+                        <span className={`${property.timer_type ? 'text-blue-600 font-medium' : 'text-gray-400'}`} title={property.timer_type}>
                           {property.timer_type || 'Not set'}
                         </span>
                       </td>
@@ -480,7 +505,7 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                       <td className="px-4 py-3 text-sm text-gray-600 text-center font-medium w-20">
                         {getTotalDuration(property.zones)}
                       </td>
-                      <td className="px-4 py-3 text-sm min-w-[120px]">
+                      <td className="px-4 py-3 text-sm">
                         {startTimes ? (
                           <div className="flex items-center gap-1 text-green-700">
                             <Play className="w-3 h-3" />
@@ -495,7 +520,7 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                           {getScheduleSummary(property.zones)}
                         </span>
                       </td>
-                      <td className="px-4 py-3 text-sm text-center w-20">
+                      {/* <td className="px-4 py-3 text-sm text-center w-20">
                         <div className="flex items-center justify-center gap-1">
                           {getStatusIcon(property.days_since_irrigation_invoice)}
                           <span className={getStatusColor(property.days_since_irrigation_invoice)}>
@@ -510,7 +535,7 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                             {property.days_since_irrigation_visit || 'N/A'}
                           </span>
                         </div>
-                      </td>
+                      </td> */}
                       <td className="px-4 py-3 text-sm text-gray-600 w-32">
                         <div className="flex items-center gap-1 truncate">
                           <User className="w-3 h-3 text-gray-400 flex-shrink-0" />
@@ -542,10 +567,39 @@ function PropertiesOverview({ properties, onSelectProperty }) {
                       </td>
                     </tr>
                     
+                    {/* Expanded notes section */}
+                    {expandedNotes.has(property.id) && property.notes && Array.isArray(property.notes) && property.notes.length > 0 && (
+                      <tr>
+                        <td colSpan="9" className="px-4 py-3 bg-blue-50">
+                          <div className="ml-8">
+                            <h4 className="text-sm font-semibold text-gray-700 mb-2 flex items-center gap-2">
+                              <StickyNote className="w-4 h-4 text-blue-600" />
+                              Property Notes ({property.notes.length})
+                            </h4>
+                            <div className="space-y-2">
+                              {property.notes.map((note, index) => (
+                                <div key={index} className="bg-white p-3 rounded border border-gray-200">
+                                  <div className="flex items-center justify-between mb-1">
+                                    <div className="flex items-center gap-2 text-xs text-gray-500">
+                                      <User className="w-3 h-3" />
+                                      <span className="font-medium">{note.user || 'Unknown'}</span>
+                                      <span>•</span>
+                                      <span>{new Date(note.timestamp).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                                    </div>
+                                  </div>
+                                  <p className="text-sm text-gray-700">{note.text}</p>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                    
                     {/* Expanded zones section */}
                     {expandedProperties.has(property.id) && property.zones && property.zones.length > 0 && (
                       <tr>
-                        <td colSpan="11" className="px-4 py-3 bg-gray-50">
+                        <td colSpan="9" className="px-4 py-3 bg-gray-50">
                           <div className="ml-8">
                             <h4 className="text-sm font-semibold text-gray-700 mb-2">Zones:</h4>
                             <div className="space-y-2">
