@@ -8,7 +8,6 @@ export const webhookService = {
   async sendWebhook(eventType, payload) {
     // Only send if webhook URL is configured
     if (!this.webhookUrl) {
-      console.log('Webhook URL not configured, skipping webhook');
       return { success: true, skipped: true };
     }
 
@@ -31,7 +30,6 @@ export const webhookService = {
         throw new Error(`Webhook failed: ${response.status} ${response.statusText}`);
       }
 
-      console.log(`Webhook sent successfully for event: ${eventType}`);
       return { success: true, response };
     } catch (error) {
       console.error('Error sending webhook:', error);

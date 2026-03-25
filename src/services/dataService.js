@@ -183,7 +183,6 @@ export const dataService = {
       for (const property of properties) {
         // Skip if already has controllers
         if (migratedPropertyIds.has(property.id)) {
-          console.log(`Property ${property.id} already has controllers, skipping`);
           continue;
         }
         
@@ -209,13 +208,11 @@ export const dataService = {
             
             if (!insertError) {
               migrated++;
-              console.log(`Migrated controller for property ${property.id}`);
             }
           }
         }
       }
 
-      console.log(`Migration complete: ${migrated} controllers created`);
       return { success: true, migrated };
     } catch (error) {
       console.error('Error migrating timer types:', error);
