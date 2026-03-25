@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, AlertCircle, CheckCircle, Settings, ChevronDown, ChevronUp, Droplets, TreePine, User, StickyNote, Play, Search, X } from 'lucide-react';
+import { Calendar, Clock, Settings, ChevronDown, ChevronUp, Droplets, TreePine, User, StickyNote, Play, Search, X } from 'lucide-react';
 
 function PropertiesOverview({ properties, onSelectProperty }) {
   const [expandedProperties, setExpandedProperties] = useState(new Set());
@@ -8,19 +8,6 @@ function PropertiesOverview({ properties, onSelectProperty }) {
   const [expandedNotesInCard, setExpandedNotesInCard] = useState(new Set());
   const [searchTerm, setSearchTerm] = useState('');
 
-  const getStatusIcon = (days) => {
-    if (days === null || days === undefined) return <AlertCircle className="w-4 h-4 text-gray-400" />;
-    if (days <= 7) return <CheckCircle className="w-4 h-4 text-green-600" />;
-    if (days <= 30) return <Clock className="w-4 h-4 text-yellow-600" />;
-    return <AlertCircle className="w-4 h-4 text-red-600" />;
-  };
-
-  const getStatusColor = (days) => {
-    if (days === null || days === undefined) return 'text-gray-400';
-    if (days <= 7) return 'text-green-600';
-    if (days <= 30) return 'text-yellow-600';
-    return 'text-red-600';
-  };
 
   const getTotalDuration = (zones) => {
     if (!zones || zones.length === 0) return 0;
@@ -286,24 +273,6 @@ function PropertiesOverview({ properties, onSelectProperty }) {
     setSearchTerm('');
   };
 
-  // Format tooltip text for the note
-  const formatNoteTooltip = (noteData) => {
-    if (!noteData) return '';
-    
-    const dateStr = noteData.date.toLocaleDateString('en-US', { 
-      month: 'short', 
-      day: 'numeric', 
-      year: 'numeric' 
-    });
-    
-    let tooltip = `${noteData.source} - ${dateStr}`;
-    if (noteData.by) {
-      tooltip += ` by ${noteData.by}`;
-    }
-    tooltip += `\n\n${noteData.note}`;
-    
-    return tooltip;
-  };
 
   // Mobile Card Component
   const PropertyCard = ({ property }) => {

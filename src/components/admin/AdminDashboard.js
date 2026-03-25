@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Users, Clock, Calendar, Activity, Shield, TrendingUp, UserCheck, RefreshCw } from 'lucide-react';
+import { Users, Activity, Shield, TrendingUp, UserCheck, RefreshCw } from 'lucide-react';
 import { authService } from '../../services/authService';
 
 function AdminDashboard({ currentUser }) {
@@ -9,6 +9,7 @@ function AdminDashboard({ currentUser }) {
 
   useEffect(() => {
     loadUserActivity();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedTimeframe]);
 
   const loadUserActivity = async () => {

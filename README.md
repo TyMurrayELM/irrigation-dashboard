@@ -1,70 +1,65 @@
-# Getting Started with Create React App
+# Irrigation Dashboard
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+React app for managing irrigation zones, controllers, and schedules across ELM properties. Built with React 19, Tailwind CSS, and Supabase.
 
-## Available Scripts
+## Getting Started
 
-In the project directory, you can run:
+```bash
+npm install
+npm start        # dev server on http://localhost:3000
+npm run build    # production build
+```
 
-### `npm start`
+## Adding New Properties
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in your browser.
+Properties live in the Supabase `properties` table. There are three ways to add them:
 
-The page will reload when you make changes.\
-You may also see any lint errors in the console.
+### Option 1: CSV Upload (Admin UI)
 
-### `npm test`
+1. Log in as an admin user
+2. Upload a CSV with these columns:
+   - Job Name, Region, Branch, Account Manager, Property Type, Days Since Irrigation Invoice, Days Since Irrigation Visit, Gate Code
+3. Existing properties (matched by name) are updated; new ones are created
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+### Option 2: Ask Claude Code
 
-### `npm run build`
+From this project directory, ask Claude to insert into Supabase. Provide:
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+- **name** (required) - property name or address
+- **region** - `Phoenix` or `Las Vegas`
+- **branch** - one of: `Phx - North`, `Phx - SouthWest`, `Phx - SouthEast`, `Las Vegas`
+- **account_manager** - manager's full name
+- **property_type** - one of: `Office`, `HOA`, `Retail`, `Industrial`, `Residential`, `Restaurant`
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+Example: "Add property 'Heritage West Shopping Center', Phoenix region, Phx - SouthWest branch, Emily Thompson, Retail"
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+### Option 3: Direct Supabase Insert
 
-### `npm run eject`
+Insert directly into the `properties` table via the Supabase dashboard or API. Required fields:
 
-**Note: this is a one-way operation. Once you `eject`, you can't go back!**
+```json
+{
+  "name": "Property Name",
+  "address": "Property Name",
+  "region": "Phoenix",
+  "branch": "Phx - North",
+  "account_manager": "First Last",
+  "property_type": "Retail",
+  "notes": []
+}
+```
 
-If you aren't satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
+Once a property exists, zones and controllers are managed through the app UI.
 
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you're on your own.
+## Database Tables
 
-You don't have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn't feel obligated to use this feature. However we understand that this tool wouldn't be useful if you couldn't customize it when you are ready for it.
+| Table | Purpose |
+|-------|---------|
+| `properties` | Property name, region, branch, account manager, type, gate code, notes |
+| `zones` | Irrigation zones per property (type, duration, frequency, schedule) |
+| `zone_history` | Change log for zone modifications |
+| `property_controllers` | Controller/timer hardware info per property |
 
-## Learn More
+## Auth
 
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+Google OAuth via Supabase. Admin users (defined in `src/services/authService.js` `ADMIN_EMAILS`) get access to CSV upload and the activity dashboard.

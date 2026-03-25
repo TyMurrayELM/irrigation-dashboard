@@ -30,7 +30,7 @@ export const dataService = {
       if (historyError) throw historyError;
 
       // Get controllers for all properties
-      const { data: controllers, error: controllersError } = await supabase
+      const { data: controllers } = await supabase
         .from('property_controllers')
         .select('*')
         .order('controller_type');

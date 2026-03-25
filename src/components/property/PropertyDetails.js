@@ -1,5 +1,5 @@
 import React from 'react';
-import { Edit2, Settings } from 'lucide-react';
+import { Edit2 } from 'lucide-react';
 import { getStatusIcon, getStatusColor } from '../../utils/helpers';
 import PropertyEditForm from './PropertyEditForm';
 import PropertyControllers from './PropertyControllers';
