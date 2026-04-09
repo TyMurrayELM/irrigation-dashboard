@@ -5,9 +5,8 @@ import PropertyEditForm from './PropertyEditForm';
 import PropertyControllers from './PropertyControllers';
 
 function PropertyDetails({ 
-  property, 
-  onEdit, 
-  onUpdate, 
+  property,
+  onUpdate,
   currentUser, 
   isEditing, 
   setIsEditing,

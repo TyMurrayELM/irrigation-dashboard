@@ -41,8 +41,6 @@ function App() {
     
     // Listen for auth changes
     const { data: authListener } = authService.onAuthStateChange((user) => {
-      // Remove or comment out this console.log in production
-      // console.log('Auth state changed:', user);
       setCurrentUser(user);
       setAuthLoading(false);
       // Load properties when user signs in
@@ -120,10 +118,7 @@ function App() {
 
   const checkAuth = async () => {
     try {
-      // Remove or comment out these console.logs in production
-      // console.log('Checking authentication...');
       const user = await authService.getCurrentUser();
-      // console.log('Current user:', user);
       setCurrentUser(user);
       setAuthLoading(false);
     } catch (error) {

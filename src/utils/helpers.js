@@ -21,6 +21,18 @@ export function getStatusIcon(days) {
   return AlertCircle;
 }
 
-export function getUniqueValues(array, field) {
-  return [...new Set(array.map(item => item[field]).filter(Boolean))].sort();
+export function formatTime(timeString) {
+  if (!timeString) return null;
+  const [hours, minutes] = timeString.split(':');
+  const hour = parseInt(hours);
+  const ampm = hour >= 12 ? 'PM' : 'AM';
+  const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
+  return `${displayHour}:${minutes} ${ampm}`;
+}
+
+export function formatMultipleStartTimes(startTimes) {
+  if (!startTimes || !Array.isArray(startTimes) || startTimes.length === 0) {
+    return null;
+  }
+  return startTimes.map(time => formatTime(time)).join(', ');
 }

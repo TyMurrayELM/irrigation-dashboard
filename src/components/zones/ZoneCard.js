@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Clock, Calendar, User, History, Edit2, Trash2, ChevronUp, Settings, Play } from 'lucide-react';
 import { getZoneIcon } from '../../utils/icons';
-import { formatFrequency } from '../../utils/helpers';
+import { formatFrequency, formatMultipleStartTimes } from '../../utils/helpers';
 import ZoneForm from './ZoneForm';
 
 function ZoneCard({ 
@@ -18,25 +18,6 @@ function ZoneCard({
 
   // Find the controller for this zone
   const assignedController = controllers.find(c => c.id === zone.controller_id);
-
-  // Format time for display (convert 24hr to 12hr format)
-  const formatTime = (timeString) => {
-    if (!timeString) return null;
-    const [hours, minutes] = timeString.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-    return `${displayHour}:${minutes} ${ampm}`;
-  };
-
-  // Format multiple start times for display
-  const formatMultipleStartTimes = (startTimes) => {
-    if (!startTimes || !Array.isArray(startTimes) || startTimes.length === 0) {
-      return null;
-    }
-    
-    return startTimes.map(time => formatTime(time)).join(', ');
-  };
 
   if (isEditing) {
     return (

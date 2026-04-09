@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { Calendar, Clock, Settings, ChevronDown, ChevronUp, Droplets, TreePine, User, StickyNote, Play, Search, X } from 'lucide-react';
+import { Calendar, Clock, Settings, ChevronDown, ChevronUp, User, StickyNote, Play, Search, X } from 'lucide-react';
+import { getZoneIcon } from '../../utils/icons';
+import { formatMultipleStartTimes } from '../../utils/helpers';
 
 function PropertiesOverview({ properties, onSelectProperty }) {
   const [expandedProperties, setExpandedProperties] = useState(new Set());
@@ -115,19 +117,6 @@ function PropertiesOverview({ properties, onSelectProperty }) {
     });
   };
 
-  const getZoneIcon = (type) => {
-    switch(type) {
-      case 'turf':
-        return <Droplets className="w-4 h-4 text-green-500" />;
-      case 'shrubs':
-        return <TreePine className="w-4 h-4 text-emerald-600" />;
-      case 'trees':
-        return <TreePine className="w-4 h-4 text-green-700" />;
-      default:
-        return <Droplets className="w-4 h-4 text-gray-400" />;
-    }
-  };
-
   const getBranchIcon = (branch) => {
     if (!branch) return null;
     
@@ -163,23 +152,6 @@ function PropertiesOverview({ properties, onSelectProperty }) {
       return days.join(', ');
     }
     return frequency?.replace(/-/g, ' ') || 'Not set';
-  };
-
-  const formatTime = (timeString) => {
-    if (!timeString) return null;
-    const [hours, minutes] = timeString.split(':');
-    const hour = parseInt(hours);
-    const ampm = hour >= 12 ? 'PM' : 'AM';
-    const displayHour = hour === 0 ? 12 : hour > 12 ? hour - 12 : hour;
-    return `${displayHour}:${minutes} ${ampm}`;
-  };
-
-  const formatMultipleStartTimes = (startTimes) => {
-    if (!startTimes || !Array.isArray(startTimes) || startTimes.length === 0) {
-      return null;
-    }
-    
-    return startTimes.map(time => formatTime(time)).join(', ');
   };
 
   // Get the most recent note from property or zones

@@ -6,8 +6,10 @@ export const zoneTypeIcons = {
   trees: { icon: TreePine, className: 'w-5 h-5 text-green-700' }
 };
 
+const unknownZoneIcon = { icon: Droplets, className: 'w-5 h-5 text-gray-400' };
+
 export function getZoneIcon(type) {
-  const config = zoneTypeIcons[type] || zoneTypeIcons.turf;
+  const config = zoneTypeIcons[type] || unknownZoneIcon;
   const Icon = config.icon;
   return <Icon className={config.className} />;
 }
